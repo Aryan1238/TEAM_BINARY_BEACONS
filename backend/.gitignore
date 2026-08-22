@@ -1,0 +1,9 @@
+# Backend-specific gitignore
+__pycache__/
+*.py[cod]
+*.pth
+*.pt
+*.joblib
+saved_models/
+logs/
+.env
