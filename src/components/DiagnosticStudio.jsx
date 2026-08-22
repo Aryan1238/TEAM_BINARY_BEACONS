@@ -36,6 +36,7 @@ import { cropDiseases } from '../data/cropDiseases';
 import { sampleCases } from '../data/sampleCases';
 import { speakAdvisory, stopSpeech } from '../utils/audioSpeech';
 import confetti from 'canvas-confetti';
+import { ANALYZE_ENDPOINT } from '../config';
 
 export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIPM, onEscalateKVK }) => {
   const [selectedCase, setSelectedCase] = useState(sampleCases[0]);
@@ -44,6 +45,11 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
   const [showSaliency, setShowSaliency] = useState(true);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [inputModality, setInputModality] = useState('camera'); // 'camera' | 'ipcam' | 'photo' | 'trap' | 'symptoms'
+  
+  // Real ML Backend Analysis State
+  const [mlResult, setMlResult] = useState(null);
+  const [mlError, setMlError] = useState('');
+  const [uploadedPreview, setUploadedPreview] = useState(null);
   
   // Real-time YOLO Camera State
   const videoRef = useRef(null);
@@ -192,28 +198,79 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
     }, 600);
   };
 
-  const handleCustomUpload = (e) => {
+  const handleCustomUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      const customCase = {
-        id: 'custom-' + Date.now(),
-        title: 'Uploaded Leaf Photo',
-        crop: 'Field Crop',
-        district: 'Current Location (GPS Auto-tagged)',
-        diseaseId: 'tomato-late-blight',
-        imageUrl: url,
-        description: 'Ground photograph captured by farmer device.',
-        bbox: { x: 30, y: 25, width: 45, height: 45 },
+    if (!file) return;
+
+    // Show preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setUploadedPreview(previewUrl);
+    setMlResult(null);
+    setMlError('');
+    setIsAnalyzing(true);
+    stopSpeech();
+    setIsPlayingAudio(false);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(ANALYZE_ENDPOINT, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        setMlError(data.message || 'Analysis failed. Please try again.');
+        setIsAnalyzing(false);
+        return;
+      }
+
+      // Store ML result for display
+      setMlResult(data.analysis);
+
+      // Also map to existing diagnosis panel using closest matching disease
+      const cropKey = (data.analysis.disease || '').toLowerCase();
+      const match = cropDiseases.find(d =>
+        d.name?.toLowerCase().includes(cropKey) ||
+        cropKey.includes(d.crop?.toLowerCase()) ||
+        d.id?.includes(cropKey.split(' ')[0])
+      ) || cropDiseases[0];
+
+      const mlCase = {
+        id: 'ml-' + Date.now(),
+        title: `${data.analysis.crop_name} — ${data.analysis.disease}`,
+        crop: data.analysis.crop_name,
+        district: 'Uploaded by Farmer',
+        diseaseId: match.id,
+        imageUrl: previewUrl,
+        description: data.analysis.summary,
+        bbox: { x: 20, y: 20, width: 55, height: 55 },
         saliencyPoints: [
-          { x: 42, y: 40, intensity: 0.95 },
-          { x: 55, y: 35, intensity: 0.88 }
+          { x: 40, y: 38, intensity: 0.95 },
+          { x: 58, y: 52, intensity: 0.80 }
         ],
-        confidence: 93,
-        severity: 'Moderate (Grade S2)',
-        chlorosisPercent: '25%'
+        confidence: data.analysis.confidence,
+        severity: data.analysis.risk_level,
+        chlorosisPercent: '—'
       };
-      handleSelectSample(customCase);
+
+      setSelectedCase(mlCase);
+      setCurrentDiagnosis(match);
+      setIsAnalyzing(false);
+
+      confetti({
+        particleCount: 40,
+        spread: 70,
+        origin: { y: 0.8 },
+        colors: ['#0F382A', '#E6A122', '#10B981']
+      });
+
+    } catch (err) {
+      setMlError('⚠️ Backend offline. Start backend with: cd backend && python3 -m uvicorn main:app --port 8000');
+      setIsAnalyzing(false);
     }
   };
 
@@ -587,51 +644,155 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
-                      PlantVillage Benchmark Specimens
+                      🤖 ML Crop Disease Scanner
                     </h2>
                     <p className="text-xs text-slate-500">
-                      Select calibrated disease leaf sample or upload ground photo.
+                      Upload a leaf photo → Real ResNet9 ML model analyzes it instantly.
                     </p>
                   </div>
 
-                  <label className="bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer transition-colors">
-                    <Upload className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Upload Leaf</span>
+                  <label className="bg-emerald-600 hover:bg-emerald-700 text-white border border-emerald-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer transition-colors shadow-sm">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload Leaf Photo</span>
                     <input type="file" accept="image/*" onChange={handleCustomUpload} className="hidden" />
                   </label>
                 </div>
 
-                {/* Benchmark Cases Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {sampleCases.map((sc) => {
-                    const isSelected = selectedCase.id === sc.id;
-                    return (
-                      <div
-                        key={sc.id}
-                        onClick={() => handleSelectSample(sc)}
-                        className={`group relative rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
-                          isSelected 
-                            ? 'border-emerald-700 ring-2 ring-emerald-400/40 shadow-md scale-102' 
-                            : 'border-slate-200 hover:border-slate-300 opacity-90 hover:opacity-100'
-                        }`}
-                      >
-                        <div className="h-24 bg-slate-900 relative overflow-hidden">
-                          <img 
-                            src={sc.imageUrl} 
-                            alt={sc.title} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
-                          />
-                          <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-black/70 text-white">
-                            {sc.crop}
-                          </span>
+                {/* ML Analyzing Spinner */}
+                {isAnalyzing && (
+                  <div className="flex flex-col items-center justify-center py-8 space-y-3">
+                    <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm font-semibold text-emerald-700">Analyzing with ResNet9 ML Model...</p>
+                    <p className="text-xs text-slate-500">Running 38-class PlantVillage classifier</p>
+                  </div>
+                )}
+
+                {/* ML Error */}
+                {mlError && !isAnalyzing && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-xs text-red-700 font-mono">
+                    {mlError}
+                  </div>
+                )}
+
+                {/* ML Result Card */}
+                {mlResult && !isAnalyzing && (
+                  <div className="space-y-4">
+                    {/* Uploaded Image Preview */}
+                    {uploadedPreview && (
+                      <div className="relative rounded-xl overflow-hidden border border-slate-200">
+                        <img src={uploadedPreview} alt="Uploaded leaf" className="w-full max-h-56 object-cover" />
+                        <span className="absolute top-2 left-2 px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-700 text-white">
+                          📸 Uploaded Leaf
+                        </span>
+                        <span className="absolute top-2 right-2 px-2 py-1 rounded-lg text-[10px] font-bold bg-black/70 text-amber-300 font-mono">
+                          {mlResult.confidence}% Confidence
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Disease Detection Result */}
+                    <div className={`rounded-xl p-4 border-2 ${mlResult.risk_level === 'HIGH' || mlResult.risk_level === 'SEVERE' ? 'bg-red-50 border-red-300' : mlResult.is_crop === false ? 'bg-slate-50 border-slate-300' : 'bg-emerald-50 border-emerald-300'}`}>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Detected Disease</p>
+                          <h3 className="text-base font-extrabold text-slate-900">{mlResult.disease}</h3>
+                          <p className="text-xs text-slate-600 mt-0.5">Crop: <span className="font-bold text-emerald-700">{mlResult.crop_name}</span></p>
                         </div>
-                        <div className="p-2 bg-white text-[11px] font-bold text-slate-800 truncate">
-                          {sc.title}
+                        <div className="text-right">
+                          <span className={`inline-block px-2 py-1 rounded-lg text-[10px] font-bold ${mlResult.risk_level === 'HIGH' || mlResult.risk_level === 'SEVERE' ? 'bg-red-600 text-white' : mlResult.risk_level === 'MODERATE' ? 'bg-amber-500 text-white' : 'bg-emerald-600 text-white'}`}>
+                            {mlResult.risk_level} RISK
+                          </span>
+                          <p className="text-xs font-mono font-bold text-slate-600 mt-1">{mlResult.confidence}% Confidence</p>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      <p className="text-xs text-slate-600 mt-3 leading-relaxed">{mlResult.summary}</p>
+                    </div>
+
+                    {/* Top 5 Predictions */}
+                    {mlResult.top5_predictions && Object.keys(mlResult.top5_predictions).length > 0 && (
+                      <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Model Top-5 Predictions</p>
+                        <div className="space-y-2">
+                          {Object.entries(mlResult.top5_predictions).map(([disease, conf], idx) => {
+                            const pct = parseFloat(conf);
+                            return (
+                              <div key={idx} className="space-y-1">
+                                <div className="flex justify-between text-[10px] font-mono">
+                                  <span className={`font-semibold truncate max-w-[200px] ${idx === 0 ? 'text-emerald-700' : 'text-slate-600'}`}>{disease.replace(/_/g, ' ')}</span>
+                                  <span className={`font-bold ${idx === 0 ? 'text-emerald-700' : 'text-slate-500'}`}>{conf}</span>
+                                </div>
+                                <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                  <div className={`h-1.5 rounded-full ${idx === 0 ? 'bg-emerald-600' : 'bg-slate-400'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* IPM Recommendations */}
+                    {mlResult.recommendations && mlResult.recommendations.length > 0 && (
+                      <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 space-y-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 mb-2">🌿 IPM Recommendations</p>
+                        {mlResult.recommendations.map((rec, i) => (
+                          <div key={i} className="flex items-start space-x-2">
+                            <span className="text-amber-500 text-xs mt-0.5">•</span>
+                            <p className="text-xs text-slate-700 leading-relaxed">{rec}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* PlantVillage Benchmark Samples (when no upload yet) */}
+                {!mlResult && !isAnalyzing && !mlError && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Or select a benchmark specimen:</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {sampleCases.map((sc) => {
+                        const isSelected = selectedCase.id === sc.id;
+                        return (
+                          <div
+                            key={sc.id}
+                            onClick={() => handleSelectSample(sc)}
+                            className={`group relative rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
+                              isSelected
+                                ? 'border-emerald-700 ring-2 ring-emerald-400/40 shadow-md scale-102'
+                                : 'border-slate-200 hover:border-slate-300 opacity-90 hover:opacity-100'
+                            }`}
+                          >
+                            <div className="h-24 bg-slate-900 relative overflow-hidden">
+                              <img
+                                src={sc.imageUrl}
+                                alt={sc.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                              <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-bold font-mono bg-black/70 text-white">
+                                {sc.crop}
+                              </span>
+                            </div>
+                            <div className="p-2 bg-white text-[11px] font-bold text-slate-800 truncate">
+                              {sc.title}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Reset Button */}
+                {(mlResult || mlError) && (
+                  <button
+                    onClick={() => { setMlResult(null); setMlError(''); setUploadedPreview(null); }}
+                    className="w-full py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center justify-center space-x-2 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Scan Another Leaf</span>
+                  </button>
+                )}
 
               </div>
             )}
