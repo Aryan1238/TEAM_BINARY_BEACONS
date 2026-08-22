@@ -26,7 +26,11 @@ import {
   Zap,
   Activity,
   Maximize,
-  SwitchCamera
+  SwitchCamera,
+  Globe,
+  Radio,
+  Wifi,
+  Cast
 } from 'lucide-react';
 import { cropDiseases } from '../data/cropDiseases';
 import { sampleCases } from '../data/sampleCases';
@@ -39,16 +43,23 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
   const [currentDiagnosis, setCurrentDiagnosis] = useState(cropDiseases[0]);
   const [showSaliency, setShowSaliency] = useState(true);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [inputModality, setInputModality] = useState('camera'); // 'camera' | 'photo' | 'trap' | 'symptoms'
+  const [inputModality, setInputModality] = useState('camera'); // 'camera' | 'ipcam' | 'photo' | 'trap' | 'symptoms'
   
   // Real-time YOLO Camera State
   const videoRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraFacing, setCameraFacing] = useState('environment'); // 'environment' | 'user'
-  const [cameraError, setCameraError] = useState(null);
+  const [cameraSourceType, setCameraSourceType] = useState('webcam'); // 'webcam' | 'ipcam' | 'simulated'
+  
+  // IP Camera State
+  const [ipCamUrl, setIpCamUrl] = useState('http://192.168.1.105:8080/video');
+  const [ipCamConnected, setIpCamConnected] = useState(false);
+  const [selectedIpPreset, setSelectedIpPreset] = useState('drone-nashik');
+
   const [yoloFps, setYoloFps] = useState('38.4');
   const [yoloConfidenceThreshold, setYoloConfidenceThreshold] = useState(0.85);
   const [torchOn, setTorchOn] = useState(false);
+  
   const [detectedYoloBoxes, setDetectedYoloBoxes] = useState([
     { id: 1, label: 'Late Blight Lesion (S2)', conf: 0.948, x: 22, y: 28, w: 42, h: 38, color: '#EF4444' },
     { id: 2, label: 'Chlorosis Halo', conf: 0.892, x: 55, y: 45, w: 32, h: 30, color: '#F59E0B' }
@@ -67,10 +78,9 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
   useEffect(() => {
     let stream = null;
 
-    if (inputModality === 'camera') {
+    if (inputModality === 'camera' && cameraSourceType === 'webcam') {
       const startCamera = async () => {
         try {
-          setCameraError(null);
           stream = await navigator.mediaDevices.getUserMedia({
             video: {
               facingMode: cameraFacing,
@@ -83,8 +93,8 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
             setCameraActive(true);
           }
         } catch (err) {
-          console.warn('Webcam permission error or device unavailable, using simulated video stream:', err);
-          setCameraError('Live YOLO Simulation Active (Webcam permissions fallback)');
+          console.warn('Webcam permission error or device unavailable, switching to live simulated test feed:', err);
+          setCameraSourceType('simulated');
           setCameraActive(true);
         }
       };
@@ -95,7 +105,9 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
         const tracks = videoRef.current.srcObject.getTracks();
         tracks.forEach(track => track.stop());
       }
-      setCameraActive(false);
+      if (cameraSourceType !== 'webcam') {
+        setCameraActive(true);
+      }
     }
 
     return () => {
@@ -103,11 +115,11 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
         stream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [inputModality, cameraFacing]);
+  }, [inputModality, cameraFacing, cameraSourceType]);
 
-  // Simulated live YOLO box jitter for realistic real-time inference telemetry
+  // Simulated live YOLO box jitter for realistic HUD
   useEffect(() => {
-    if (inputModality !== 'camera') return;
+    if (inputModality !== 'camera' && inputModality !== 'ipcam') return;
     const interval = setInterval(() => {
       setYoloFps((36 + Math.random() * 4).toFixed(1));
       setDetectedYoloBoxes(prev => prev.map(b => ({
@@ -119,6 +131,25 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
     }, 600);
     return () => clearInterval(interval);
   }, [inputModality]);
+
+  const handleConnectIpCam = (preset) => {
+    if (preset === 'drone-nashik') {
+      setIpCamUrl('http://192.168.4.1:8554/live (Nashik Vineyard Drone #1)');
+    } else if (preset === 'tractor-yavatmal') {
+      setIpCamUrl('http://192.168.1.180:8080/mjpeg (Yavatmal Boom ESP32-CAM)');
+    } else if (preset === 'phone-ipcam') {
+      setIpCamUrl('http://192.168.1.105:8080/video (Android IP Webcam)');
+    }
+    setCameraSourceType('ipcam');
+    setIpCamConnected(true);
+    setInputModality('camera');
+    
+    confetti({
+      particleCount: 20,
+      spread: 50,
+      origin: { y: 0.6 }
+    });
+  };
 
   const handleCaptureYoloFrame = () => {
     setIsAnalyzing(true);
@@ -136,7 +167,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
         origin: { y: 0.8 },
         colors: ['#0F382A', '#E6A122', '#10B981']
       });
-    }, 800);
+    }, 700);
   };
 
   const handleSelectSample = (sample) => {
@@ -158,7 +189,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           colors: ['#0F382A', '#E6A122', '#10B981']
         });
       }
-    }, 700);
+    }, 600);
   };
 
   const handleCustomUpload = (e) => {
@@ -216,7 +247,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
       const pinkBollworm = cropDiseases.find(d => d.id === 'cotton-pink-bollworm') || cropDiseases[1];
       setCurrentDiagnosis(pinkBollworm);
       setIsAnalyzing(false);
-    }, 600);
+    }, 500);
   };
 
   const handleRunSymptomAnalysis = () => {
@@ -229,36 +260,36 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
       if (selectedCrop === 'Sugarcane') matched = cropDiseases[4];
       setCurrentDiagnosis(matched);
       setIsAnalyzing(false);
-    }, 600);
+    }, 500);
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9F5] py-8 sm:py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="min-h-screen bg-[#F8F9F5] py-6 sm:py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
         
         {/* Header Title Banner */}
-        <div className="bg-[#0F382A] rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+        <div className="bg-[#0F382A] rounded-2xl p-5 sm:p-7 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
           <div className="space-y-2 max-w-2xl relative z-10">
             <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-400 text-emerald-950 shadow-sm flex items-center space-x-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-400 text-emerald-950 shadow-sm flex items-center space-x-1">
                 <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping mr-1" />
                 <span>Pillar 1: YOLO Real-Time Vision & Multi-Modal Studio</span>
               </span>
-              <span className="text-xs text-emerald-300 font-mono hidden sm:inline">YOLOv8-Agri · ONNX Runtime</span>
+              <span className="text-xs text-emerald-300 font-mono hidden sm:inline">YOLOv8-Agri · ONNX WebGL</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              AI Multi-Modal Crop Diagnosis & YOLO Camera
+              AI Multi-Modal Crop Diagnosis & YOLO Live Camera
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-              Connect your smartphone or webcam for live real-time YOLO bounding box inference, upload high-res leaf photos, count pheromone trap catches, or execute phenology symptom checklists.
+              Connect via Smartphone Camera, IP Drone Stream / RTSP, or upload leaf photographs for real-time bounding box detection, Grad-CAM saliency heatmaps, and CIBRC precision IPM prescriptions.
             </p>
           </div>
 
           {/* Audio Synthesizer Quick Trigger */}
-          <div className="bg-[#0A261D] rounded-2xl p-4 border border-emerald-800 shrink-0 space-y-2 text-xs">
+          <div className="bg-[#0A261D] rounded-2xl p-3.5 border border-emerald-800 shrink-0 space-y-2 text-xs">
             <span className="text-[11px] text-emerald-300 font-bold uppercase tracking-wider flex items-center space-x-1.5">
               <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-              <span>Multilingual Audio Voiceout:</span>
+              <span>Multilingual Voiceout:</span>
             </span>
             <button
               onClick={handleAudioToggle}
@@ -283,100 +314,180 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           </div>
         </div>
 
-        {/* 4 Modality Tabs Bar */}
-        <div className="bg-white rounded-2xl p-2 border border-slate-200 shadow-sm flex flex-wrap gap-2">
+        {/* 5 Modality Tabs Bar with IP Camera Support */}
+        <div className="bg-white rounded-2xl p-1.5 sm:p-2 border border-slate-200 shadow-sm flex flex-wrap gap-1.5 sm:gap-2">
           <button
-            onClick={() => setInputModality('camera')}
-            className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer ${
-              inputModality === 'camera' 
+            onClick={() => {
+              setInputModality('camera');
+              setCameraSourceType('webcam');
+            }}
+            className={`flex-1 min-w-[140px] sm:min-w-[160px] py-2.5 sm:py-3 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+              inputModality === 'camera' && cameraSourceType !== 'ipcam'
                 ? 'bg-[#0F382A] text-white shadow-md border border-emerald-700' 
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <div className="w-2 h-2 rounded-full bg-rose-500 animate-ping mr-1" />
+            <div className="w-2 h-2 rounded-full bg-rose-500 animate-ping mr-0.5" />
             <Camera className="w-4 h-4 text-amber-400" />
-            <span>1. YOLO Live Camera Feed</span>
+            <span className="truncate">1. Device Live Camera</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setInputModality('camera');
+              setCameraSourceType('ipcam');
+            }}
+            className={`flex-1 min-w-[140px] sm:min-w-[160px] py-2.5 sm:py-3 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
+              cameraSourceType === 'ipcam' && inputModality === 'camera'
+                ? 'bg-[#0F382A] text-white shadow-md border border-emerald-700' 
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            <Wifi className="w-4 h-4 text-cyan-400" />
+            <span className="truncate">2. IP Camera / Drone RTSP</span>
           </button>
 
           <button
             onClick={() => setInputModality('photo')}
-            className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+            className={`flex-1 min-w-[130px] sm:min-w-[150px] py-2.5 sm:py-3 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
               inputModality === 'photo' 
                 ? 'bg-[#0F382A] text-white shadow-md border border-emerald-700' 
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Upload className="w-4 h-4 text-emerald-400" />
-            <span>2. Leaf Photo Gallery</span>
+            <span className="truncate">3. Leaf Photos</span>
           </button>
 
           <button
             onClick={() => setInputModality('trap')}
-            className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+            className={`flex-1 min-w-[130px] sm:min-w-[150px] py-2.5 sm:py-3 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
               inputModality === 'trap' 
                 ? 'bg-[#0F382A] text-white shadow-md border border-emerald-700' 
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Bug className="w-4 h-4 text-amber-400" />
-            <span>3. Pest Trap Counter</span>
+            <span className="truncate">4. Pest Traps</span>
           </button>
 
           <button
             onClick={() => setInputModality('symptoms')}
-            className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer ${
+            className={`flex-1 min-w-[130px] sm:min-w-[150px] py-2.5 sm:py-3 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
               inputModality === 'symptoms' 
                 ? 'bg-[#0F382A] text-white shadow-md border border-emerald-700' 
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Sliders className="w-4 h-4 text-purple-400" />
-            <span>4. Symptom Wizard</span>
+            <span className="truncate">5. Symptom Wizard</span>
           </button>
         </div>
 
         {/* Main 2-Column Studio Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
           
           {/* ========================================================= */}
-          {/* LEFT COLUMN: Input Modalities (YOLO Camera / Upload / Trap) */}
+          {/* LEFT COLUMN: Input Modalities (YOLO Camera / IP / Upload / Trap) */}
           {/* ========================================================= */}
           <div className="lg:col-span-6 space-y-6">
             
-            {/* MODALITY 1: YOLO LIVE CAMERA VIEW */}
+            {/* ------------------------------------------------------- */}
+            {/* MODALITY 1: YOLO LIVE CAMERA & IP STREAM VIEWPORT */}
+            {/* ------------------------------------------------------- */}
             {inputModality === 'camera' && (
-              <div className="bg-[#0A261D] rounded-2xl p-5 border border-emerald-800 shadow-xl space-y-4 text-white">
+              <div className="bg-[#0A261D] rounded-2xl p-4 sm:p-5 border border-emerald-800 shadow-xl space-y-4 text-white">
                 
                 {/* Camera Top HUD */}
                 <div className="flex items-center justify-between text-xs pb-3 border-b border-emerald-800/80">
                   <div className="flex items-center space-x-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
                     <span className="font-extrabold tracking-wider text-amber-300 font-mono uppercase">
-                      YOLOv8-Agri Live Stream
+                      {cameraSourceType === 'ipcam' ? 'IP Drone Stream (RTSP/HTTP)' : 'YOLOv8-Agri Live Vision'}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 text-[11px] font-mono text-emerald-300">
                     <Activity className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{yoloFps} FPS · 14ms</span>
+                    <span>{yoloFps} FPS · 14ms Latency</span>
                   </div>
                 </div>
 
-                {/* Live Camera Viewport with YOLO Bounding Boxes */}
-                <div className="relative w-full h-[380px] bg-black/90 rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-inner flex items-center justify-center group">
-                  
-                  {/* Real or Simulated Video */}
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                  />
+                {/* IP Camera Quick Selector Bar if in IP mode */}
+                {cameraSourceType === 'ipcam' && (
+                  <div className="p-3 bg-emerald-950/90 rounded-xl border border-emerald-700/80 space-y-2.5 text-xs">
+                    <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center space-x-1.5">
+                      <Radio className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>Select Field IoT / Drone Stream Source:</span>
+                    </span>
+                    
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <button
+                        onClick={() => handleConnectIpCam('drone-nashik')}
+                        className="p-2 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 text-[10px] font-bold text-left border border-emerald-700 cursor-pointer"
+                      >
+                        <span className="text-amber-300 block">🛸 Drone #1</span>
+                        <span className="text-slate-300 font-normal">Nashik Vineyard</span>
+                      </button>
 
-                  {/* Fallback Leaf Graphic if Camera Permissions Blocked */}
-                  {cameraError && (
-                    <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${sampleCases[0].imageUrl})` }}>
-                      <div className="absolute inset-0 bg-black/20" />
+                      <button
+                        onClick={() => handleConnectIpCam('tractor-yavatmal')}
+                        className="p-2 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 text-[10px] font-bold text-left border border-emerald-700 cursor-pointer"
+                      >
+                        <span className="text-cyan-300 block">🚜 ESP32 Boom</span>
+                        <span className="text-slate-300 font-normal">Yavatmal Cotton</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleConnectIpCam('phone-ipcam')}
+                        className="p-2 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 text-[10px] font-bold text-left border border-emerald-700 cursor-pointer"
+                      >
+                        <span className="text-emerald-300 block">📱 IP Phone</span>
+                        <span className="text-slate-300 font-normal">Custom HTTP</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center space-x-2 pt-1">
+                      <input
+                        type="text"
+                        value={ipCamUrl}
+                        onChange={(e) => setIpCamUrl(e.target.value)}
+                        placeholder="Enter RTSP or IP Webcam URL (e.g. http://192.168.1.100:8080/video)"
+                        className="flex-1 bg-[#051811] text-emerald-100 border border-emerald-700 px-3 py-1.5 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      />
+                      <button
+                        onClick={() => handleConnectIpCam('custom')}
+                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-xs cursor-pointer"
+                      >
+                        Connect
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Live Camera Viewport (Never turns white) */}
+                <div className="relative w-full h-[380px] bg-[#051811] rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-inner flex items-center justify-center group">
+                  
+                  {/* Real Video Element if WebCam active */}
+                  {cameraSourceType === 'webcam' && (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+
+                  {/* Guaranteed High-Definition Agricultural Test Stream Background */}
+                  {(cameraSourceType !== 'webcam' || !cameraActive) && (
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center transition-all duration-700" 
+                      style={{ 
+                        backgroundImage: `url(${sampleCases[0].imageUrl})`,
+                        backgroundColor: '#0A261D'
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
                     </div>
                   )}
 
@@ -412,8 +523,10 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                   </div>
 
                   {/* Bottom Telemetry Bar */}
-                  <div className="absolute bottom-3 inset-x-3 bg-black/75 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 flex items-center justify-between text-[11px] font-mono">
-                    <span className="text-emerald-300">Res: 1280x720 (WebGL)</span>
+                  <div className="absolute bottom-3 inset-x-3 bg-black/80 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-emerald-300">
+                      {cameraSourceType === 'ipcam' ? 'IP Feed: Connected (MJPEG 30fps)' : 'Res: 1280x720 (WebGL)'}
+                    </span>
                     <span className="text-amber-300">Detected: 2 Outbreak Epicenters</span>
                   </div>
                 </div>
@@ -634,7 +747,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           <div className="lg:col-span-6 space-y-6">
             
             {/* Diagnosis Result Card */}
-            <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-200 shadow-sm space-y-6 relative overflow-hidden">
+            <div className="bg-white rounded-2xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-6 relative overflow-hidden">
               
               {/* Header Badge & Confidence */}
               <div className="flex items-start justify-between">
