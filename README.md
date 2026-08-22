@@ -7,7 +7,8 @@
 
 ---
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-krushiraksha.vercel.app-0F382A?style=for-the-badge&logo=vercel&logoColor=white)](https://krushiraksha.vercel.app)
+[![Live Demo Vercel](https://img.shields.io/badge/🌐_Vercel_Live-krushiraksha.vercel.app-0F382A?style=for-the-badge&logo=vercel&logoColor=white)](https://krushiraksha.vercel.app)
+[![GitHub Pages](https://img.shields.io/badge/🚀_GitHub_Pages-TEAM__BINARY__BEACONS-22C55E?style=for-the-badge&logo=github&logoColor=white)](https://aryan1238.github.io/TEAM_BINARY_BEACONS/)
 [![SIH Problem ID](https://img.shields.io/badge/SIH_2024-Problem_ID_26131-E6A122?style=for-the-badge&logo=target&logoColor=black)](https://krushiraksha.vercel.app)
 [![React 19](https://img.shields.io/badge/React_19-Vite_8-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![YOLOv8 Real-Time](https://img.shields.io/badge/YOLOv8--Agri-ONNX_WebGL-FF6F00?style=for-the-badge&logo=yolo&logoColor=white)](https://krushiraksha.vercel.app)
