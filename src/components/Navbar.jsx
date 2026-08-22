@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   Sprout, 
   Globe, 
@@ -13,7 +13,9 @@ import {
   X,
   Scan,
   LayoutDashboard,
-  Cpu
+  Cpu,
+  Camera,
+  Radio
 } from 'lucide-react';
 import { translations } from '../data/translations';
 
@@ -30,69 +32,77 @@ export const Navbar = ({
   const t = translations[currentLang] || translations.en;
 
   const navItems = [
-    { id: 'landing', label: t.nav.features, icon: Sprout },
-    { id: 'diagnosis', label: 'AI Diagnostic Studio', icon: Scan, badge: 'Pillar 1' },
-    { id: 'weather', label: 'Weather Risk', icon: CloudRain, badge: 'Pillar 2' },
-    { id: 'hotspots', label: 'Hotspot Maps', icon: MapPin, badge: 'Pillar 3' },
-    { id: 'ipm', label: 'CIBRC Dosage', icon: Calculator, badge: 'Pillar 4' },
-    { id: 'dashboard', label: t.nav.dashboard, icon: LayoutDashboard, badge: 'Pillar 5' },
+    { id: 'landing', label: 'Overview', icon: Sprout },
+    { id: 'diagnosis', label: 'YOLO Vision AI', icon: Camera, badge: 'Live P1', highlight: true },
+    { id: 'weather', label: 'Weather Risk', icon: CloudRain, badge: 'P2' },
+    { id: 'hotspots', label: 'Hotspots GIS', icon: MapPin, badge: 'P3' },
+    { id: 'ipm', label: 'CIBRC Dosage', icon: Calculator, badge: 'P4' },
+    { id: 'dashboard', label: 'Role Studio', icon: LayoutDashboard, badge: 'P5' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-[#0F382A]/95 backdrop-blur-md border-b border-emerald-800/60 text-white shadow-lg">
-      {/* Top micro-bar for SIH details */}
-      <div className="bg-[#0A261D] text-emerald-300/90 text-xs py-1 px-4 border-b border-emerald-900/60">
+    <header className="sticky top-0 z-50 bg-[#0F382A]/95 backdrop-blur-md border-b border-emerald-800/80 text-white shadow-xl">
+      {/* Top SIH 26131 Micro-Ticker */}
+      <div className="bg-[#0A261D] text-emerald-300/90 text-[11px] py-1 px-4 border-b border-emerald-900/80">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-2 font-medium tracking-wide">
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+            <span className="inline-flex items-center px-2 py-0.2 rounded text-[10px] font-extrabold bg-amber-400 text-emerald-950 shadow-sm">
               SIH 2024
             </span>
-            <span className="truncate">Problem ID: 26131 · Maharashtra State Innovation Society · Dept of Skills & Innovation</span>
+            <span className="truncate hidden sm:inline font-mono">
+              Problem ID 26131 · Govt of Maharashtra State Innovation Society
+            </span>
+            <span className="sm:hidden font-mono">SIH ID 26131</span>
           </div>
-          <div className="hidden md:flex items-center space-x-4 text-[11px]">
+
+          <div className="flex items-center space-x-3 text-[11px]">
             <button 
               onClick={onOpenSmsSim}
-              className="hover:text-amber-300 transition-colors flex items-center space-x-1 cursor-pointer"
+              className="hover:text-amber-300 transition-colors flex items-center space-x-1.5 cursor-pointer bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/60"
             >
               <Smartphone className="w-3 h-3 text-amber-400" />
-              <span>{t.nav.offlineMode} (SMS / USSD)</span>
+              <span>Offline SMS / IVR</span>
             </button>
-            <span className="text-emerald-700">|</span>
-            <div className="flex items-center space-x-1 text-emerald-200">
+            <span className="text-emerald-700 hidden md:inline">|</span>
+            <div className="hidden md:flex items-center space-x-1 text-emerald-200">
               <PhoneCall className="w-3 h-3 text-emerald-400" />
-              <span>{t.nav.helpline}</span>
+              <span>1800-KRUSHI</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      {/* Main Navbar Bar */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 gap-2">
           
-          {/* Logo & Brand */}
+          {/* LEFT: Logo & Brand */}
           <div 
             onClick={() => onNavigate('landing')} 
-            className="flex items-center space-x-2.5 cursor-pointer group"
+            className="flex items-center space-x-2.5 cursor-pointer shrink-0 group"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-700 p-0.5 shadow-md group-hover:scale-105 transition-transform flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 via-emerald-400 to-emerald-700 p-0.5 shadow-md group-hover:scale-105 transition-transform flex items-center justify-center">
               <div className="w-full h-full bg-[#0F382A] rounded-[10px] flex items-center justify-center">
-                <Sprout className="w-6 h-6 text-emerald-400 transform group-hover:rotate-12 transition-transform" />
+                <Sprout className="w-5 h-5 text-amber-400 transform group-hover:rotate-12 transition-transform" />
               </div>
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight text-white flex items-center space-x-1">
-                <span>{t.nav.brand}</span>
-                <span className="text-amber-400 text-xs font-serif font-normal italic px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800">AI</span>
-              </span>
-              <p className="text-[10px] text-emerald-300/80 -mt-1 font-medium hidden sm:block">
-                {t.nav.tagline}
+              <div className="flex items-center space-x-1.5">
+                <span className="text-base sm:text-lg font-extrabold tracking-tight text-white">
+                  KrushiRaksha
+                </span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40">
+                  AI
+                </span>
+              </div>
+              <p className="text-[10px] text-emerald-300/80 -mt-0.5 font-medium hidden sm:block">
+                Crop Health & Outbreak GIS
               </p>
             </div>
           </div>
 
-          {/* Center Navigation Links */}
-          <nav className="hidden lg:flex items-center space-x-1">
+          {/* CENTER: Navigation Links */}
+          <nav className="hidden xl:flex items-center space-x-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeView === item.id;
@@ -100,17 +110,21 @@ export const Navbar = ({
                 <button
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer ${
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer whitespace-nowrap ${
                     isActive 
-                      ? 'bg-emerald-800 text-amber-300 shadow-inner border border-emerald-700/80' 
+                      ? 'bg-emerald-800/90 text-amber-300 shadow-inner border border-emerald-600' 
                       : 'text-emerald-100/90 hover:text-white hover:bg-emerald-900/60'
                   }`}
                 >
                   <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-amber-300' : 'text-emerald-400'}`} />
                   <span>{item.label}</span>
                   {item.badge && (
-                    <span className={`text-[9px] px-1 py-0.2 rounded font-mono ${
-                      isActive ? 'bg-amber-400/20 text-amber-200' : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                    <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
+                      isActive 
+                        ? 'bg-amber-400 text-emerald-950' 
+                        : item.highlight 
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                          : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                     }`}>
                       {item.badge}
                     </span>
@@ -120,16 +134,16 @@ export const Navbar = ({
             })}
           </nav>
 
-          {/* Right Tools: Role Switcher, Language Switcher, CTA */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* RIGHT TOOLS: Role Switcher, Language & Scan Button */}
+          <div className="flex items-center space-x-2 sm:space-x-2.5 shrink-0">
             
             {/* Role Switcher Pill */}
-            <div className="bg-[#0A261D] p-0.5 rounded-lg border border-emerald-800 flex items-center">
+            <div className="hidden sm:flex bg-[#0A261D] p-0.5 rounded-lg border border-emerald-800 items-center shrink-0">
               <button
                 onClick={() => onRoleChange('farmer')}
-                className={`px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                   currentRole === 'farmer' 
-                    ? 'bg-emerald-700 text-white font-semibold shadow-sm' 
+                    ? 'bg-emerald-700 text-white shadow-sm' 
                     : 'text-emerald-300/80 hover:text-white'
                 }`}
                 title="Farmer Interface"
@@ -138,9 +152,9 @@ export const Navbar = ({
               </button>
               <button
                 onClick={() => onRoleChange('officer')}
-                className={`px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                   currentRole === 'officer' 
-                    ? 'bg-emerald-700 text-white font-semibold shadow-sm' 
+                    ? 'bg-emerald-700 text-white shadow-sm' 
                     : 'text-emerald-300/80 hover:text-white'
                 }`}
                 title="Extension Officer Interface"
@@ -149,9 +163,9 @@ export const Navbar = ({
               </button>
               <button
                 onClick={() => onRoleChange('govt')}
-                className={`px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                className={`px-2 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                   currentRole === 'govt' 
-                    ? 'bg-emerald-700 text-white font-semibold shadow-sm' 
+                    ? 'bg-emerald-700 text-white shadow-sm' 
                     : 'text-emerald-300/80 hover:text-white'
                 }`}
                 title="Govt Command Center"
@@ -161,47 +175,51 @@ export const Navbar = ({
             </div>
 
             {/* Language Selector */}
-            <div className="relative flex items-center bg-[#0A261D] rounded-lg border border-emerald-800 px-2 py-1 text-xs">
-              <Globe className="w-3.5 h-3.5 text-emerald-400 mr-1.5" />
+            <div className="relative flex items-center bg-[#0A261D] rounded-lg border border-emerald-800 px-2 py-1 text-xs shrink-0">
+              <Globe className="w-3.5 h-3.5 text-emerald-400 mr-1" />
               <select
                 value={currentLang}
                 onChange={(e) => onLangChange(e.target.value)}
-                className="bg-transparent text-emerald-100 text-xs font-medium focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-emerald-100 text-[11px] font-semibold focus:outline-none cursor-pointer"
               >
-                <option value="en" className="bg-[#0F382A] text-white">English</option>
-                <option value="mr" className="bg-[#0F382A] text-white">मराठी (Marathi)</option>
-                <option value="hi" className="bg-[#0F382A] text-white">हिंदी (Hindi)</option>
+                <option value="en" className="bg-[#0F382A] text-white">EN</option>
+                <option value="mr" className="bg-[#0F382A] text-white">मराठी</option>
+                <option value="hi" className="bg-[#0F382A] text-white">हिंदी</option>
               </select>
             </div>
 
-            {/* Scan Crop Button */}
+            {/* YOLO Live Camera CTA Button (Properly Aligned & Padded) */}
             <button
               onClick={() => onNavigate('diagnosis')}
-              className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-emerald-950 px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-md hover:shadow-amber-500/20 transition-all flex items-center space-x-1.5 cursor-pointer transform hover:-translate-y-0.5"
+              className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-500 text-emerald-950 font-extrabold px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs shadow-lg hover:shadow-amber-400/25 transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 border border-amber-300/60"
             >
-              <Scan className="w-3.5 h-3.5 text-emerald-950" />
-              <span>{t.nav.scanCrop}</span>
+              <div className="w-2 h-2 rounded-full bg-rose-600 animate-ping mr-0.5" />
+              <Camera className="w-4 h-4 text-emerald-950 shrink-0" />
+              <span className="whitespace-nowrap font-sans tracking-tight">YOLO Live Vision</span>
             </button>
+
+            {/* Mobile Menu Trigger */}
+            <div className="flex xl:hidden items-center ml-1">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-1.5 rounded-lg bg-emerald-900/80 border border-emerald-800 text-emerald-200 hover:text-white focus:outline-none cursor-pointer"
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
+
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="flex lg:hidden items-center space-x-2">
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg bg-emerald-900 text-emerald-200 hover:text-white focus:outline-none"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#0A261D] border-b border-emerald-800 px-4 pt-2 pb-6 space-y-3">
-          <div className="grid grid-cols-2 gap-2 py-2">
+        <div className="xl:hidden bg-[#0A261D] border-b border-emerald-800 px-4 pt-3 pb-6 space-y-4 animate-fade-in">
+          <div className="grid grid-cols-2 gap-2">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const isActive = activeView === item.id;
               return (
                 <button
                   key={item.id}
@@ -209,8 +227,8 @@ export const Navbar = ({
                     onNavigate(item.id);
                     setMobileMenuOpen(false);
                   }}
-                  className={`p-2.5 rounded-lg text-xs font-medium flex items-center space-x-2 text-left ${
-                    activeView === item.id ? 'bg-emerald-800 text-amber-300' : 'bg-emerald-900/40 text-emerald-100'
+                  className={`p-2.5 rounded-xl text-xs font-semibold flex items-center space-x-2 text-left transition-all ${
+                    isActive ? 'bg-emerald-800 text-amber-300 border border-emerald-700' : 'bg-emerald-900/40 text-emerald-100'
                   }`}
                 >
                   <Icon className="w-4 h-4 text-emerald-400" />
@@ -220,36 +238,19 @@ export const Navbar = ({
             })}
           </div>
 
-          <div className="pt-2 border-t border-emerald-800/80 flex flex-col space-y-2">
+          <div className="pt-2 border-t border-emerald-800/80 flex flex-col space-y-3">
             <div className="flex items-center justify-between text-xs text-emerald-300">
-              <span>{t.nav.role}:</span>
+              <span className="font-semibold">Switch Persona:</span>
               <div className="flex space-x-1">
                 {['farmer', 'officer', 'govt'].map(r => (
                   <button
                     key={r}
                     onClick={() => onRoleChange(r)}
-                    className={`px-2 py-1 rounded text-xs capitalize ${
-                      currentRole === r ? 'bg-emerald-600 text-white font-bold' : 'bg-emerald-900 text-emerald-300'
+                    className={`px-2.5 py-1 rounded-lg text-xs capitalize font-bold transition-all ${
+                      currentRole === r ? 'bg-amber-400 text-emerald-950 shadow' : 'bg-emerald-900 text-emerald-300'
                     }`}
                   >
                     {r}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-emerald-300 pt-1">
-              <span>Language:</span>
-              <div className="flex space-x-1">
-                {[['en', 'EN'], ['mr', 'मराठी'], ['hi', 'हिंदी']].map(([code, label]) => (
-                  <button
-                    key={code}
-                    onClick={() => onLangChange(code)}
-                    className={`px-2 py-1 rounded text-xs ${
-                      currentLang === code ? 'bg-amber-500 text-emerald-950 font-bold' : 'bg-emerald-900 text-emerald-200'
-                    }`}
-                  >
-                    {label}
                   </button>
                 ))}
               </div>
@@ -260,10 +261,10 @@ export const Navbar = ({
                 onOpenSmsSim();
                 setMobileMenuOpen(false);
               }}
-              className="w-full mt-2 py-2 bg-emerald-900 text-amber-300 rounded-lg text-xs font-medium flex items-center justify-center space-x-2"
+              className="w-full py-2.5 bg-emerald-900 hover:bg-emerald-800 text-amber-300 border border-emerald-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-2"
             >
               <Smartphone className="w-4 h-4" />
-              <span>Open Offline SMS & IVR Simulator</span>
+              <span>Open Offline 2G SMS & IVR Simulator</span>
             </button>
           </div>
         </div>
