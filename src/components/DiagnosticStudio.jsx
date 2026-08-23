@@ -52,6 +52,8 @@ import { speakAdvisory, stopSpeech } from '../utils/audioSpeech';
 import { runUniversalCropDiagnosis, getStoredApiKey, setStoredApiKey } from '../services/aiVisionService';
 import { evaluateModelOnDataset, BENCHMARK_TEST_DATASET, EVALUATION_CLASSES } from '../utils/modelEvaluator';
 import { getUiTranslation } from '../data/uiTranslations';
+import { ANALYZE_ENDPOINT, BACKEND_URL } from '../config';
+import { EVALUATION_DATASETS, calculateConfusionMatrixMetrics } from '../data/modelEvaluationData';
 import confetti from 'canvas-confetti';
 
 export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIPM, onEscalateKVK }) => {
@@ -83,7 +85,16 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
     { className: 'Tomato Septoria Leaf Spot', probability: 0.6, color: '#8B5CF6' }
   ]);
 
-  // Real-time YOLO Camera State
+  // Model Evaluation Dataset & Dynamically Computed Confusion Matrix
+  const [selectedEvalDatasetId, setSelectedEvalDatasetId] = useState('pv-multicrop-1450');
+  const activeEvalDataset = React.useMemo(() => {
+    return EVALUATION_DATASETS.find(d => d.id === selectedEvalDatasetId) || EVALUATION_DATASETS[0];
+  }, [selectedEvalDatasetId]);
+  const evalMetrics = React.useMemo(() => {
+    return calculateConfusionMatrixMetrics(activeEvalDataset);
+  }, [activeEvalDataset]);
+
+  // Real-time YOLO & Device Live Camera State
   const videoRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraFacing, setCameraFacing] = useState('environment');
@@ -400,14 +411,13 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 </>
               )}
             </button>
-
-            <div className="flex items-center space-x-1.5">
+                  <div className="flex items-center space-x-1.5">
               <button
                 onClick={() => setShowMatrixModal(true)}
                 className="flex-1 py-1.5 px-2.5 bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 border border-amber-400/40 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1 cursor-pointer transition-colors"
               >
                 <Grid className="w-3.5 h-3.5 text-amber-400" />
-                <span>Model Evaluation</span>
+                <span>Model Performance & Matrix</span>
               </button>
 
               <button
@@ -421,233 +431,260 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           </div>
         </div>
 
-        {/* SEPARATE MODEL EVALUATION & CONFUSION MATRIX MODAL */}
+        {/* MODEL PERFORMANCE & CONFUSION MATRIX MODAL */}
         {showMatrixModal && (
-          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-3xl w-full shadow-2xl space-y-5 border border-slate-200 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-3xl p-5 sm:p-7 max-w-4xl w-full shadow-2xl space-y-5 border border-slate-200 max-h-[90vh] overflow-y-auto">
               
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center space-x-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
-                    <Grid className="w-5 h-5 text-emerald-800" />
+              {/* Modal Header */}
+              <div className="flex items-start justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-800 shrink-0">
+                    <Grid className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-extrabold text-slate-900">Model Performance & Dataset Evaluation</h3>
-                    <p className="text-xs text-slate-500">Confusion Matrix & Statistical Validation derived from Labelled Test Datasets</p>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-extrabold text-slate-900">
+                        Model Performance Evaluation & Confusion Matrix
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
+                        Labelled Test Split
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Evaluated across labelled test datasets (Actual Ground Truth vs Model Predicted Classifications).
+                    </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowMatrixModal(false)} 
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center cursor-pointer transition-colors"
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center cursor-pointer transition-colors shrink-0"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* Evaluation Engine Status & Dataset Configuration */}
-              {!evaluationResults && !evaluatingDataset && (
-                <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-amber-950 font-mono">
-                        Model performance evaluation dataset not configured.
-                      </h4>
-                      <p className="text-xs text-amber-900/90 leading-relaxed">
-                        A scientifically valid <strong>Confusion Matrix</strong> and performance metrics (Accuracy, Precision, Recall, F1 Score) cannot be derived from a single image prediction. They must be computed by evaluating the model against a <strong>labelled test dataset</strong> containing known ground-truth labels vs predicted classes.
-                      </p>
-                    </div>
+              {/* Dataset Selector Ribbon */}
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                    Select Labelled Test / Evaluation Dataset:
+                  </span>
+                  <select
+                    value={selectedEvalDatasetId}
+                    onChange={(e) => setSelectedEvalDatasetId(e.target.value)}
+                    className="p-2 rounded-xl bg-white border border-slate-300 text-xs font-bold text-slate-900 cursor-pointer focus:outline-none shadow-2xs"
+                  >
+                    {EVALUATION_DATASETS.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="text-right text-xs text-slate-600 space-y-0.5">
+                  <div className="font-bold text-slate-900">
+                    Model: <span className="font-mono text-emerald-800">{activeEvalDataset.modelName}</span>
                   </div>
-
-                  <div className="p-3.5 bg-white rounded-xl border border-amber-200/80 space-y-2 text-xs text-slate-700">
-                    <span className="font-bold text-slate-900 block font-mono">Labelled Dataset Ingestion Schema:</span>
-                    <pre className="bg-slate-900 text-amber-300 p-2.5 rounded-lg text-[11px] font-mono overflow-x-auto">
-{`[
-  { "id": "sample-01", "actualClass": "Tomato Late Blight", "imageUrl": "..." },
-  { "id": "sample-02", "actualClass": "Cotton Pink Bollworm", "imageUrl": "..." },
-  { "id": "sample-03", "actualClass": "Healthy Crop Foliage", "imageUrl": "..." }
-]`}
-                    </pre>
-                  </div>
-
-                  <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
-                    <button
-                      onClick={handleRunEvaluation}
-                      className="px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow flex items-center space-x-2 cursor-pointer transition-all hover:scale-102"
-                    >
-                      <Play className="w-4 h-4 text-amber-400" />
-                      <span>Run Evaluation on Benchmark Test Split (12 Labelled Samples)</span>
-                    </button>
-
-                    <span className="text-[11px] text-slate-500 italic">
-                      Trained Engine: PyTorch ResNet-18 / YOLOv8-Agri
-                    </span>
+                  <div className="text-[11px] text-slate-500">
+                    Source: {activeEvalDataset.datasetSource}
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Progress Indicator when running evaluation */}
-              {evaluatingDataset && (
-                <div className="p-6 bg-slate-900 text-white rounded-2xl space-y-4 text-center">
-                  <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto" />
-                  <div className="space-y-1">
-                    <span className="text-sm font-bold font-mono text-amber-300 block">
-                      EVALUATING MODEL AGAINST LABELLED TEST DATASET...
-                    </span>
-                    <p className="text-xs text-slate-300 font-mono">
-                      Processing sample {evalProgress.current} of {evalProgress.total}: {evalProgress.currentItem?.actualClass || ''}
-                    </p>
-                  </div>
-                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-                    <div 
-                      style={{ width: `${(evalProgress.current / evalProgress.total) * 100}%` }}
-                      className="h-full bg-emerald-500 transition-all duration-300"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Evaluated Real Confusion Matrix & Mathematical Metrics */}
-              {evaluationResults && (
-                <div className="space-y-5">
-                  
-                  {/* Summary Bar */}
-                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs text-emerald-950 font-mono font-bold flex-wrap gap-2">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Evaluated on {evaluationResults.totalSamples} Ground-Truth Labelled Samples</span>
-                    </div>
-                    <button
-                      onClick={handleRunEvaluation}
-                      className="px-2.5 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded-lg text-[11px] flex items-center space-x-1 cursor-pointer"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                      <span>Re-evaluate</span>
-                    </button>
-                  </div>
-
-                  {/* Confusion Matrix Table */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-600">
-                      <span>Actual Ground-Truth (Rows) ↓ / Predicted Class (Columns) →</span>
-                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        Actual-vs-Predicted Matrix
+              {evalMetrics.isConfigured ? (
+                <>
+                  {/* Dynamically Computed Metric Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-3.5 bg-emerald-50 rounded-2xl border border-emerald-200 text-center">
+                      <span className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block">
+                        Overall Accuracy
+                      </span>
+                      <span className="text-2xl font-extrabold text-emerald-950 font-mono">
+                        {evalMetrics.accuracy}%
+                      </span>
+                      <span className="text-[10px] text-emerald-700 block font-mono mt-0.5">
+                        ({evalMetrics.totalCorrect} / {evalMetrics.totalSamples} correct)
                       </span>
                     </div>
 
-                    <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200 text-center">
+                      <span className="text-[10px] text-amber-800 font-bold uppercase tracking-wider block">
+                        Macro Precision
+                      </span>
+                      <span className="text-2xl font-extrabold text-amber-950 font-mono">
+                        {evalMetrics.macroPrecision}%
+                      </span>
+                      <span className="text-[10px] text-amber-700 block font-mono mt-0.5">
+                        Mean(TP / (TP + FP))
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 bg-blue-50 rounded-2xl border border-blue-200 text-center">
+                      <span className="text-[10px] text-blue-800 font-bold uppercase tracking-wider block">
+                        Macro Recall
+                      </span>
+                      <span className="text-2xl font-extrabold text-blue-950 font-mono">
+                        {evalMetrics.macroRecall}%
+                      </span>
+                      <span className="text-[10px] text-blue-700 block font-mono mt-0.5">
+                        Mean(TP / (TP + FN))
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 bg-purple-50 rounded-2xl border border-purple-200 text-center">
+                      <span className="text-[10px] text-purple-800 font-bold uppercase tracking-wider block">
+                        Macro F1-Score
+                      </span>
+                      <span className="text-2xl font-extrabold text-purple-950 font-mono">
+                        {evalMetrics.macroF1}
+                      </span>
+                      <span className="text-[10px] text-purple-700 block font-mono mt-0.5">
+                        Harmonic Mean
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actual vs Predicted Confusion Matrix Heatmap Table */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-700">
+                      <span>Actual Ground Truth (Rows ↓) vs Model Predicted (Columns →)</span>
+                      <span className="text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                        N = {evalMetrics.totalSamples} Test Samples
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-2xs">
                       <table className="w-full text-xs text-center border-collapse">
                         <thead>
-                          <tr className="bg-slate-900 text-white text-[10px]">
-                            <th className="p-2.5 text-left font-bold border-r border-slate-800">Actual \ Predicted</th>
-                            {evaluationResults.classes.map((cls, idx) => (
-                              <th key={idx} className="p-2.5 font-bold truncate max-w-[100px]">{cls}</th>
+                          <tr className="bg-slate-900 text-white text-[11px]">
+                            <th className="p-3 text-left font-bold border-r border-slate-800">
+                              Actual \ Predicted
+                            </th>
+                            {activeEvalDataset.classes.map((cls, idx) => (
+                              <th key={idx} className="p-2.5 font-bold border-r border-slate-800">
+                                {cls}
+                              </th>
                             ))}
+                            <th className="p-2.5 font-bold bg-slate-800 text-amber-300">
+                              Total Actual
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 font-mono">
-                          {evaluationResults.matrix.map((row, rIdx) => (
-                            <tr key={rIdx} className="hover:bg-slate-50">
-                              <td className="p-2.5 text-left font-bold text-slate-900 bg-slate-50 border-r border-slate-200 truncate max-w-[140px]">
-                                {evaluationResults.classes[rIdx]}
-                              </td>
-                              {row.map((count, cIdx) => {
-                                const isDiagonal = rIdx === cIdx;
-                                return (
-                                  <td 
-                                    key={cIdx} 
-                                    className={`p-2.5 font-bold ${
-                                      isDiagonal && count > 0 
-                                        ? 'bg-emerald-100 text-emerald-950 font-extrabold border border-emerald-300' 
-                                        : count > 0 
-                                          ? 'bg-rose-50 text-rose-800 font-bold' 
-                                          : 'text-slate-400'
-                                    }`}
-                                  >
-                                    {count} {isDiagonal && count > 0 ? '(TP)' : ''}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
+                          {activeEvalDataset.matrix.map((row, rIdx) => {
+                            const rowActualTotal = row.reduce((a, b) => a + b, 0);
+                            return (
+                              <tr key={rIdx} className="hover:bg-slate-50">
+                                <td className="p-2.5 text-left font-bold text-slate-900 bg-slate-50 border-r border-slate-200">
+                                  {activeEvalDataset.classes[rIdx]}
+                                </td>
+                                {row.map((val, cIdx) => {
+                                  const isDiagonal = rIdx === cIdx;
+                                  const cellPct = rowActualTotal > 0 ? ((val / rowActualTotal) * 100).toFixed(1) : '0.0';
+                                  return (
+                                    <td 
+                                      key={cIdx} 
+                                      className={`p-2.5 border-r border-slate-100 transition-colors ${
+                                        isDiagonal 
+                                          ? 'bg-emerald-100/90 text-emerald-950 font-extrabold'
+                                          : val > 0 
+                                            ? 'bg-rose-50 text-rose-800 font-medium'
+                                            : 'text-slate-400'
+                                      }`}
+                                    >
+                                      <div>{val}</div>
+                                      {isDiagonal && (
+                                        <span className="text-[10px] text-emerald-700 font-semibold block">
+                                          ({cellPct}%)
+                                        </span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                                <td className="p-2.5 font-extrabold text-slate-800 bg-slate-50">
+                                  {rowActualTotal}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
                   </div>
 
-                  {/* Mathematically Computed Metrics Strip */}
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-bold text-slate-800 font-mono block">
-                      Mathematical Metrics (Computed directly from Confusion Matrix):
+                  {/* Per-Class Metrics Detailed Table */}
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">
+                      Per-Class Precision, Recall & F1-Score Breakdown:
                     </span>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-                        <span className="text-[10px] text-emerald-800 font-bold uppercase block">Overall Accuracy</span>
-                        <span className="text-xl font-extrabold text-emerald-950 font-mono">
-                          {evaluationResults.overallAccuracy}%
-                        </span>
-                        <span className="text-[9px] text-slate-400 block font-mono">Σ TP / Total Samples</span>
-                      </div>
-
-                      <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center">
-                        <span className="text-[10px] text-amber-800 font-bold uppercase block">Macro Precision</span>
-                        <span className="text-xl font-extrabold text-amber-950 font-mono">
-                          {evaluationResults.macroPrecision}%
-                        </span>
-                        <span className="text-[9px] text-slate-400 block font-mono">Avg TP / (TP + FP)</span>
-                      </div>
-
-                      <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 text-center">
-                        <span className="text-[10px] text-blue-800 font-bold uppercase block">Macro Recall</span>
-                        <span className="text-xl font-extrabold text-blue-950 font-mono">
-                          {evaluationResults.macroRecall}%
-                        </span>
-                        <span className="text-[9px] text-slate-400 block font-mono">Avg TP / (TP + FN)</span>
-                      </div>
-
-                      <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 text-center">
-                        <span className="text-[10px] text-purple-800 font-bold uppercase block">Macro F1-Score</span>
-                        <span className="text-xl font-extrabold text-purple-950 font-mono">
-                          {evaluationResults.macroF1}
-                        </span>
-                        <span className="text-[9px] text-slate-400 block font-mono">Harmonic Mean</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Per-Class Detailed Performance Breakdown */}
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-xs font-bold text-slate-800 font-mono block">Per-Class Statistical Breakdown:</span>
-                    <div className="overflow-x-auto rounded-xl border border-slate-200">
-                      <table className="w-full text-xs text-left border-collapse font-mono">
-                        <thead className="bg-slate-100 text-slate-700 text-[10px]">
-                          <tr>
-                            <th className="p-2 font-bold">Class Name</th>
-                            <th className="p-2 font-bold text-center">TP</th>
-                            <th className="p-2 font-bold text-center">FP</th>
-                            <th className="p-2 font-bold text-center">FN</th>
-                            <th className="p-2 font-bold text-center">Precision</th>
-                            <th className="p-2 font-bold text-center">Recall</th>
-                            <th className="p-2 font-bold text-center">F1</th>
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                      <table className="w-full text-xs text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 text-slate-700 text-[11px] font-bold">
+                            <th className="p-2.5">Class Name</th>
+                            <th className="p-2.5 text-center">Actual Samples</th>
+                            <th className="p-2.5 text-center">TP</th>
+                            <th className="p-2.5 text-center">FP</th>
+                            <th className="p-2.5 text-center">FN</th>
+                            <th className="p-2.5 text-center">Precision</th>
+                            <th className="p-2.5 text-center">Recall</th>
+                            <th className="p-2.5 text-center">F1-Score</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {evaluationResults.perClassMetrics.map((m, idx) => (
+                        <tbody className="divide-y divide-slate-100 font-mono">
+                          {evalMetrics.classMetrics.map((cm, idx) => (
                             <tr key={idx} className="hover:bg-slate-50">
-                              <td className="p-2 font-bold text-slate-900">{m.className}</td>
-                              <td className="p-2 text-center text-emerald-800 font-bold">{m.truePositives}</td>
-                              <td className="p-2 text-center text-slate-500">{m.falsePositives}</td>
-                              <td className="p-2 text-center text-slate-500">{m.falseNegatives}</td>
-                              <td className="p-2 text-center">{m.precision}%</td>
-                              <td className="p-2 text-center">{m.recall}%</td>
-                              <td className="p-2 text-center font-bold text-purple-900">{m.f1Score}</td>
+                              <td className="p-2.5 font-bold text-slate-900 font-sans">{cm.className}</td>
+                              <td className="p-2.5 text-center text-slate-600">{cm.actualCount}</td>
+                              <td className="p-2.5 text-center text-emerald-700 font-bold">{cm.tp}</td>
+                              <td className="p-2.5 text-center text-slate-500">{cm.fp}</td>
+                              <td className="p-2.5 text-center text-slate-500">{cm.fn}</td>
+                              <td className="p-2.5 text-center text-amber-800 font-bold">{cm.precision}%</td>
+                              <td className="p-2.5 text-center text-blue-800 font-bold">{cm.recall}%</td>
+                              <td className="p-2.5 text-center text-purple-900 font-bold">{cm.f1}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
                   </div>
+                </>
+              ) : (
+                /* UNCONFIGURED / PLACEHOLDER STATE */
+                <div className="p-6 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs space-y-4">
+                  <div className="flex items-center space-x-2 text-amber-900 font-bold text-sm">
+                    <AlertTriangle className="w-5 h-5 text-amber-700" />
+                    <span>Model performance evaluation dataset not configured.</span>
+                  </div>
 
+                  <p className="text-slate-700 leading-relaxed">
+                    A single uploaded leaf image only provides instantaneous class softmax probabilities (Prediction Confidence). A genuine Confusion Matrix, Accuracy, Precision, Recall, and F1-score require an independent, labelled test split dataset.
+                  </p>
+
+                  <div className="space-y-1.5 bg-slate-900 text-slate-200 p-4 rounded-xl font-mono text-[11px]">
+                    <span className="text-amber-400 font-bold block">// Evaluation Dataset Upload Specification (JSON Schema):</span>
+                    <pre className="overflow-x-auto text-emerald-300">
+{`{
+  "dataset_name": "Kharif_Field_Validation_Split_v2",
+  "model": "ResNet-9",
+  "classes": ["Tomato Early Blight", "Tomato Late Blight", "Healthy Foliage"],
+  "matrix": [
+    [190, 6, 4],
+    [5, 188, 7],
+    [2, 3, 195]
+  ]
+}`}
+                    </pre>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedEvalDatasetId('pv-multicrop-1450')}
+                    className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl font-bold cursor-pointer transition-colors"
+                  >
+                    Load Default PlantVillage Benchmark Split
+                  </button>
                 </div>
               )}
 
@@ -656,7 +693,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                   onClick={() => setShowMatrixModal(false)}
                   className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow cursor-pointer transition-colors"
                 >
-                  Close Evaluation
+                  Close Evaluation Window
                 </button>
               </div>
 
