@@ -40,12 +40,17 @@ import {
   BarChart3,
   Grid,
   TrendingUp,
-  Award
+  Award,
+  Database,
+  Play,
+  RotateCcw,
+  FileSpreadsheet
 } from 'lucide-react';
 import { cropDiseases } from '../data/cropDiseases';
 import { sampleCases } from '../data/sampleCases';
 import { speakAdvisory, stopSpeech } from '../utils/audioSpeech';
 import { runUniversalCropDiagnosis, getStoredApiKey, setStoredApiKey } from '../services/aiVisionService';
+import { evaluateModelOnDataset, BENCHMARK_TEST_DATASET, EVALUATION_CLASSES } from '../utils/modelEvaluator';
 import { getUiTranslation } from '../data/uiTranslations';
 import confetti from 'canvas-confetti';
 
@@ -65,7 +70,12 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
   const [showMatrixModal, setShowMatrixModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState(getStoredApiKey());
   
-  // Prediction Probabilities Distribution State
+  // Model Performance Evaluation State (Separated from single live scan)
+  const [evaluatingDataset, setEvaluatingDataset] = useState(false);
+  const [evalProgress, setEvalProgress] = useState({ current: 0, total: 0, currentItem: null });
+  const [evaluationResults, setEvaluationResults] = useState(null);
+  
+  // Live Scan: Prediction Confidence / Class Probabilities State
   const [classProbabilities, setClassProbabilities] = useState([
     { className: 'Tomato Late Blight (Phytophthora)', probability: 94.8, color: '#EF4444' },
     { className: 'Tomato Healthy Foliage', probability: 3.4, color: '#10B981' },
@@ -203,7 +213,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
 
     setInputModality('photo');
     setIsAnalyzing(true);
-    setAiStatus('Calling Vision API & Calculating Softmax Probabilities...');
+    setAiStatus('Calling Vision API & Calculating Class Probabilities...');
     stopSpeech();
     setIsPlayingAudio(false);
 
@@ -255,6 +265,31 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
     setStoredApiKey(apiKeyInput);
     setShowApiModal(false);
     alert('✅ Gemini Vision API Key saved! Live AI Vision API calls will now use your key.');
+  };
+
+  // Run Real Batch Evaluation on Labelled Test Dataset
+  const handleRunEvaluation = async () => {
+    setEvaluatingDataset(true);
+    setEvalProgress({ current: 0, total: BENCHMARK_TEST_DATASET.length, currentItem: null });
+
+    try {
+      const results = await evaluateModelOnDataset(BENCHMARK_TEST_DATASET, (current, total, item) => {
+        setEvalProgress({ current, total, currentItem: item });
+      });
+
+      setEvaluationResults(results);
+      setEvaluatingDataset(false);
+
+      confetti({
+        particleCount: 45,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+    } catch (err) {
+      console.error('Model evaluation failed:', err);
+      setEvaluatingDataset(false);
+      alert('Evaluation failed: ' + err.message);
+    }
   };
 
   const handleAudioToggle = () => {
@@ -331,7 +366,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
             <div className="flex items-center space-x-2 flex-wrap gap-y-1">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-400 text-emerald-950 shadow-sm flex items-center space-x-1">
                 <Bot className="w-3.5 h-3.5 text-emerald-950 mr-0.5" />
-                <span>Pillar 1: AI Vision API & Multi-Class Softmax Studio</span>
+                <span>Pillar 1: AI Vision & Multi-Modal Studio</span>
               </span>
               <span className="text-xs text-emerald-300 font-mono hidden sm:inline">Google Gemini 1.5 Flash Vision · PyTorch ResNet-18</span>
             </div>
@@ -339,11 +374,11 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
               {t.title || 'AI Multi-Modal Crop Diagnosis & YOLO Live Camera'}
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-              Upload any crop photo to calculate full multi-class prediction probabilities, Grad-CAM saliency heatmaps, model confusion matrix, and CIBRC precision IPM prescriptions.
+              Upload any crop photo to calculate class probabilities, Grad-CAM saliency heatmaps, and CIBRC precision IPM prescriptions.
             </p>
           </div>
 
-          {/* Quick Controls: Voiceout, API Key Config & Confusion Matrix Modal */}
+          {/* Quick Controls: Voiceout, API Key Config & Model Evaluation Modal */}
           <div className="flex flex-col sm:flex-row md:flex-col gap-2 shrink-0">
             <button
               onClick={handleAudioToggle}
@@ -372,7 +407,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 className="flex-1 py-1.5 px-2.5 bg-amber-400/15 hover:bg-amber-400/25 text-amber-300 border border-amber-400/40 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1 cursor-pointer transition-colors"
               >
                 <Grid className="w-3.5 h-3.5 text-amber-400" />
-                <span>Confusion Matrix</span>
+                <span>Model Evaluation</span>
               </button>
 
               <button
@@ -386,10 +421,10 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           </div>
         </div>
 
-        {/* CONFUSION MATRIX MODAL */}
+        {/* SEPARATE MODEL EVALUATION & CONFUSION MATRIX MODAL */}
         {showMatrixModal && (
           <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl space-y-5 border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-3xl w-full shadow-2xl space-y-5 border border-slate-200 max-h-[90vh] overflow-y-auto">
               
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-2.5">
@@ -397,8 +432,8 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                     <Grid className="w-5 h-5 text-emerald-800" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-extrabold text-slate-900">Model Evaluation: Confusion Matrix</h3>
-                    <p className="text-xs text-slate-500">Benchmark validation metrics across 54,303 PlantVillage & IP102 specimens</p>
+                    <h3 className="text-lg font-extrabold text-slate-900">Model Performance & Dataset Evaluation</h3>
+                    <p className="text-xs text-slate-500">Confusion Matrix & Statistical Validation derived from Labelled Test Datasets</p>
                   </div>
                 </div>
                 <button 
@@ -409,98 +444,219 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 </button>
               </div>
 
-              {/* Confusion Matrix Table */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-600">
-                  <span>Actual Class (Rows) ↓ / Predicted Class (Cols) →</span>
-                  <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    ResNet-18 & YOLOv8-Agri
-                  </span>
-                </div>
+              {/* Evaluation Engine Status & Dataset Configuration */}
+              {!evaluationResults && !evaluatingDataset && (
+                <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-4">
+                  <div className="flex items-start space-x-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-amber-950 font-mono">
+                        Model performance evaluation dataset not configured.
+                      </h4>
+                      <p className="text-xs text-amber-900/90 leading-relaxed">
+                        A scientifically valid <strong>Confusion Matrix</strong> and performance metrics (Accuracy, Precision, Recall, F1 Score) cannot be derived from a single image prediction. They must be computed by evaluating the model against a <strong>labelled test dataset</strong> containing known ground-truth labels vs predicted classes.
+                      </p>
+                    </div>
+                  </div>
 
-                <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                  <table className="w-full text-xs text-center border-collapse">
-                    <thead>
-                      <tr className="bg-slate-900 text-white text-[11px]">
-                        <th className="p-2.5 text-left font-bold">Actual \ Predicted</th>
-                        <th className="p-2.5 font-bold">Anthracnose / Blight</th>
-                        <th className="p-2.5 font-bold">Healthy Foliage</th>
-                        <th className="p-2.5 font-bold">Powdery Mildew</th>
-                        <th className="p-2.5 font-bold">Bacterial / Spot</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-mono">
-                      <tr className="hover:bg-slate-50">
-                        <td className="p-2.5 text-left font-bold text-slate-900 bg-slate-50">Anthracnose / Blight</td>
-                        <td className="p-2.5 bg-emerald-100 text-emerald-900 font-extrabold">45 (TP)</td>
-                        <td className="p-2.5 text-slate-500">3</td>
-                        <td className="p-2.5 text-slate-500">2</td>
-                        <td className="p-2.5 text-slate-500">1</td>
-                      </tr>
-                      <tr className="hover:bg-slate-50">
-                        <td className="p-2.5 text-left font-bold text-slate-900 bg-slate-50">Healthy Foliage</td>
-                        <td className="p-2.5 text-slate-500">2</td>
-                        <td className="p-2.5 bg-emerald-100 text-emerald-900 font-extrabold">48 (TP)</td>
-                        <td className="p-2.5 text-slate-500">1</td>
-                        <td className="p-2.5 text-slate-500">0</td>
-                      </tr>
-                      <tr className="hover:bg-slate-50">
-                        <td className="p-2.5 text-left font-bold text-slate-900 bg-slate-50">Powdery Mildew</td>
-                        <td className="p-2.5 text-slate-500">3</td>
-                        <td className="p-2.5 text-slate-500">2</td>
-                        <td className="p-2.5 bg-emerald-100 text-emerald-900 font-extrabold">40 (TP)</td>
-                        <td className="p-2.5 text-slate-500">1</td>
-                      </tr>
-                      <tr className="hover:bg-slate-50">
-                        <td className="p-2.5 text-left font-bold text-slate-900 bg-slate-50">Bacterial / Spot</td>
-                        <td className="p-2.5 text-slate-500">1</td>
-                        <td className="p-2.5 text-slate-500">1</td>
-                        <td className="p-2.5 text-slate-500">2</td>
-                        <td className="p-2.5 bg-emerald-100 text-emerald-900 font-extrabold">44 (TP)</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                  <div className="p-3.5 bg-white rounded-xl border border-amber-200/80 space-y-2 text-xs text-slate-700">
+                    <span className="font-bold text-slate-900 block font-mono">Labelled Dataset Ingestion Schema:</span>
+                    <pre className="bg-slate-900 text-amber-300 p-2.5 rounded-lg text-[11px] font-mono overflow-x-auto">
+{`[
+  { "id": "sample-01", "actualClass": "Tomato Late Blight", "imageUrl": "..." },
+  { "id": "sample-02", "actualClass": "Cotton Pink Bollworm", "imageUrl": "..." },
+  { "id": "sample-03", "actualClass": "Healthy Crop Foliage", "imageUrl": "..." }
+]`}
+                    </pre>
+                  </div>
 
-              {/* Statistical Metrics Strip */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-                  <span className="text-[10px] text-emerald-800 font-bold uppercase block">Overall Accuracy</span>
-                  <span className="text-xl font-extrabold text-emerald-950 font-mono">96.8%</span>
-                </div>
+                  <div className="flex items-center justify-between flex-wrap gap-2 pt-1">
+                    <button
+                      onClick={handleRunEvaluation}
+                      className="px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow flex items-center space-x-2 cursor-pointer transition-all hover:scale-102"
+                    >
+                      <Play className="w-4 h-4 text-amber-400" />
+                      <span>Run Evaluation on Benchmark Test Split (12 Labelled Samples)</span>
+                    </button>
 
-                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center">
-                  <span className="text-[10px] text-amber-800 font-bold uppercase block">Precision</span>
-                  <span className="text-xl font-extrabold text-amber-950 font-mono">97.1%</span>
+                    <span className="text-[11px] text-slate-500 italic">
+                      Trained Engine: PyTorch ResNet-18 / YOLOv8-Agri
+                    </span>
+                  </div>
                 </div>
+              )}
 
-                <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 text-center">
-                  <span className="text-[10px] text-blue-800 font-bold uppercase block">Recall / Sensitivity</span>
-                  <span className="text-xl font-extrabold text-blue-950 font-mono">95.9%</span>
+              {/* Progress Indicator when running evaluation */}
+              {evaluatingDataset && (
+                <div className="p-6 bg-slate-900 text-white rounded-2xl space-y-4 text-center">
+                  <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto" />
+                  <div className="space-y-1">
+                    <span className="text-sm font-bold font-mono text-amber-300 block">
+                      EVALUATING MODEL AGAINST LABELLED TEST DATASET...
+                    </span>
+                    <p className="text-xs text-slate-300 font-mono">
+                      Processing sample {evalProgress.current} of {evalProgress.total}: {evalProgress.currentItem?.actualClass || ''}
+                    </p>
+                  </div>
+                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                    <div 
+                      style={{ width: `${(evalProgress.current / evalProgress.total) * 100}%` }}
+                      className="h-full bg-emerald-500 transition-all duration-300"
+                    />
+                  </div>
                 </div>
+              )}
 
-                <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 text-center">
-                  <span className="text-[10px] text-purple-800 font-bold uppercase block">F1-Score</span>
-                  <span className="text-xl font-extrabold text-purple-950 font-mono">0.962</span>
+              {/* Evaluated Real Confusion Matrix & Mathematical Metrics */}
+              {evaluationResults && (
+                <div className="space-y-5">
+                  
+                  {/* Summary Bar */}
+                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between text-xs text-emerald-950 font-mono font-bold flex-wrap gap-2">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Evaluated on {evaluationResults.totalSamples} Ground-Truth Labelled Samples</span>
+                    </div>
+                    <button
+                      onClick={handleRunEvaluation}
+                      className="px-2.5 py-1 bg-emerald-800 hover:bg-emerald-700 text-white rounded-lg text-[11px] flex items-center space-x-1 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Re-evaluate</span>
+                    </button>
+                  </div>
+
+                  {/* Confusion Matrix Table */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-600">
+                      <span>Actual Ground-Truth (Rows) ↓ / Predicted Class (Columns) →</span>
+                      <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Actual-vs-Predicted Matrix
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+                      <table className="w-full text-xs text-center border-collapse">
+                        <thead>
+                          <tr className="bg-slate-900 text-white text-[10px]">
+                            <th className="p-2.5 text-left font-bold border-r border-slate-800">Actual \ Predicted</th>
+                            {evaluationResults.classes.map((cls, idx) => (
+                              <th key={idx} className="p-2.5 font-bold truncate max-w-[100px]">{cls}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-mono">
+                          {evaluationResults.matrix.map((row, rIdx) => (
+                            <tr key={rIdx} className="hover:bg-slate-50">
+                              <td className="p-2.5 text-left font-bold text-slate-900 bg-slate-50 border-r border-slate-200 truncate max-w-[140px]">
+                                {evaluationResults.classes[rIdx]}
+                              </td>
+                              {row.map((count, cIdx) => {
+                                const isDiagonal = rIdx === cIdx;
+                                return (
+                                  <td 
+                                    key={cIdx} 
+                                    className={`p-2.5 font-bold ${
+                                      isDiagonal && count > 0 
+                                        ? 'bg-emerald-100 text-emerald-950 font-extrabold border border-emerald-300' 
+                                        : count > 0 
+                                          ? 'bg-rose-50 text-rose-800 font-bold' 
+                                          : 'text-slate-400'
+                                    }`}
+                                  >
+                                    {count} {isDiagonal && count > 0 ? '(TP)' : ''}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Mathematically Computed Metrics Strip */}
+                  <div className="space-y-1.5">
+                    <span className="text-xs font-bold text-slate-800 font-mono block">
+                      Mathematical Metrics (Computed directly from Confusion Matrix):
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                      <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
+                        <span className="text-[10px] text-emerald-800 font-bold uppercase block">Overall Accuracy</span>
+                        <span className="text-xl font-extrabold text-emerald-950 font-mono">
+                          {evaluationResults.overallAccuracy}%
+                        </span>
+                        <span className="text-[9px] text-slate-400 block font-mono">Σ TP / Total Samples</span>
+                      </div>
+
+                      <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center">
+                        <span className="text-[10px] text-amber-800 font-bold uppercase block">Macro Precision</span>
+                        <span className="text-xl font-extrabold text-amber-950 font-mono">
+                          {evaluationResults.macroPrecision}%
+                        </span>
+                        <span className="text-[9px] text-slate-400 block font-mono">Avg TP / (TP + FP)</span>
+                      </div>
+
+                      <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 text-center">
+                        <span className="text-[10px] text-blue-800 font-bold uppercase block">Macro Recall</span>
+                        <span className="text-xl font-extrabold text-blue-950 font-mono">
+                          {evaluationResults.macroRecall}%
+                        </span>
+                        <span className="text-[9px] text-slate-400 block font-mono">Avg TP / (TP + FN)</span>
+                      </div>
+
+                      <div className="p-3 bg-purple-50 rounded-xl border border-purple-200 text-center">
+                        <span className="text-[10px] text-purple-800 font-bold uppercase block">Macro F1-Score</span>
+                        <span className="text-xl font-extrabold text-purple-950 font-mono">
+                          {evaluationResults.macroF1}
+                        </span>
+                        <span className="text-[9px] text-slate-400 block font-mono">Harmonic Mean</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Per-Class Detailed Performance Breakdown */}
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-xs font-bold text-slate-800 font-mono block">Per-Class Statistical Breakdown:</span>
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                      <table className="w-full text-xs text-left border-collapse font-mono">
+                        <thead className="bg-slate-100 text-slate-700 text-[10px]">
+                          <tr>
+                            <th className="p-2 font-bold">Class Name</th>
+                            <th className="p-2 font-bold text-center">TP</th>
+                            <th className="p-2 font-bold text-center">FP</th>
+                            <th className="p-2 font-bold text-center">FN</th>
+                            <th className="p-2 font-bold text-center">Precision</th>
+                            <th className="p-2 font-bold text-center">Recall</th>
+                            <th className="p-2 font-bold text-center">F1</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {evaluationResults.perClassMetrics.map((m, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50">
+                              <td className="p-2 font-bold text-slate-900">{m.className}</td>
+                              <td className="p-2 text-center text-emerald-800 font-bold">{m.truePositives}</td>
+                              <td className="p-2 text-center text-slate-500">{m.falsePositives}</td>
+                              <td className="p-2 text-center text-slate-500">{m.falseNegatives}</td>
+                              <td className="p-2 text-center">{m.precision}%</td>
+                              <td className="p-2 text-center">{m.recall}%</td>
+                              <td className="p-2 text-center font-bold text-purple-900">{m.f1Score}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
                 </div>
-              </div>
-
-              {/* Explanatory Distinction */}
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 leading-relaxed space-y-1">
-                <span className="font-bold text-slate-800 block">💡 Important Distinction (Confusion Matrix vs Prediction Probabilities):</span>
-                <p>
-                  • <strong>Confusion Matrix</strong> reflects the <em>overall statistical validation performance</em> across the full test dataset.<br/>
-                  • <strong>Prediction Probabilities (below)</strong> represent the <em>real-time Softmax confidence scores</em> computed specifically for the leaf photo you just uploaded.
-                </p>
-              </div>
+              )}
 
               <div className="pt-2 flex justify-end">
                 <button
                   onClick={() => setShowMatrixModal(false)}
-                  className="px-5 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold shadow cursor-pointer transition-colors"
+                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow cursor-pointer transition-colors"
                 >
-                  Close Matrix
+                  Close Evaluation
                 </button>
               </div>
 
@@ -565,7 +721,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
             }`}
           >
             <Upload className="w-4 h-4 text-emerald-400" />
-            <span className="truncate">{t.tabPhoto || '1. Upload Photo (AI API)'}</span>
+            <span className="truncate">{t.tabPhoto || '1. Upload Photo / Gallery'}</span>
           </button>
 
           <button
@@ -597,7 +753,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
             }`}
           >
             <Wifi className="w-4 h-4 text-cyan-400" />
-            <span className="truncate">{t.tabIpCam || '3. IP Camera / Drone'}</span>
+            <span className="truncate">{t.tabIpCam || '3. IP Camera / Drone RTSP'}</span>
           </button>
 
           <button
@@ -609,7 +765,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
             }`}
           >
             <Bug className="w-4 h-4 text-amber-400" />
-            <span className="truncate">{t.tabTrap || '4. Pest Traps'}</span>
+            <span className="truncate">{t.tabTrap || '4. Pest Traps (IP102)'}</span>
           </button>
 
           <button
@@ -682,7 +838,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                     <div className="absolute inset-0 bg-emerald-950/70 backdrop-blur-[3px] flex flex-col items-center justify-center space-y-3">
                       <div className="w-12 h-12 rounded-full border-4 border-amber-400 border-t-transparent animate-spin" />
                       <span className="text-white text-xs font-mono font-bold tracking-wider animate-pulse">
-                        CALLING AI VISION API & COMPUTING PROBABILITIES...
+                        CALLING AI VISION API & COMPUTING CLASS PROBABILITIES...
                       </span>
                     </div>
                   )}
@@ -959,7 +1115,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           </div>
 
           {/* ========================================================= */}
-          {/* RIGHT COLUMN: AI Inference Result & PREDICTION PROBABILITIES */}
+          {/* RIGHT COLUMN: LIVE SCAN PREDICTION & CLASS PROBABILITIES  */}
           {/* ========================================================= */}
           <div className="lg:col-span-6 space-y-6">
             
@@ -990,7 +1146,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 </div>
 
                 <div className="text-right">
-                  <span className="text-xs text-slate-400 block font-mono">{t.confidenceLabel || 'AI Confidence'}</span>
+                  <span className="text-xs text-slate-400 block font-mono">{t.confidenceLabel || 'Prediction Confidence'}</span>
                   <span className="text-2xl font-extrabold text-emerald-700 font-mono">
                     {selectedCase.confidence || '87.4'}%
                   </span>
@@ -998,22 +1154,19 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
               </div>
 
               {/* ======================================================= */}
-              {/* PREDICTION PROBABILITIES DISTRIBUTION (SOFTMAX BARS)    */}
+              {/* CLASS PROBABILITIES (PREDICTION CONFIDENCE DISTRIBUTION) */}
               {/* ======================================================= */}
               <div className="p-4 rounded-xl bg-slate-900 text-white space-y-3 shadow-inner">
                 <div className="flex items-center justify-between pb-1 border-b border-slate-800">
                   <div className="flex items-center space-x-2">
                     <BarChart3 className="w-4 h-4 text-amber-400" />
                     <span className="text-xs font-bold tracking-wider uppercase text-slate-200 font-mono">
-                      Prediction Probabilities (Multi-Class Softmax)
+                      Class Probabilities (Current Specimen)
                     </span>
                   </div>
-                  <button 
-                    onClick={() => setShowMatrixModal(true)}
-                    className="text-[10px] text-amber-300 hover:text-amber-200 font-bold underline cursor-pointer"
-                  >
-                    View Confusion Matrix &rarr;
-                  </button>
+                  <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+                    Live Inference
+                  </span>
                 </div>
 
                 <div className="space-y-2.5 pt-1">
@@ -1028,7 +1181,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                         </span>
                       </div>
 
-                      {/* Animated Progress Bar */}
+                      {/* Probability Progress Bar */}
                       <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden flex">
                         <div
                           style={{
@@ -1043,7 +1196,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 </div>
 
                 <p className="text-[10px] text-slate-400 pt-1 leading-relaxed italic">
-                  *Demonstrates full multi-class neural probability scores across candidate diseases rather than a singular static output.
+                  *These values represent the model's prediction probabilities for the current uploaded image. Model-level performance (Confusion Matrix, Accuracy, Precision) is evaluated separately on labelled test datasets.
                 </p>
               </div>
 
