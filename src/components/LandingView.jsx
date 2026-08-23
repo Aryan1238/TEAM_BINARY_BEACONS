@@ -115,6 +115,10 @@ export const LandingView = ({ currentLang, onNavigate, onRoleChange }) => {
                 <div className="relative rounded-xl overflow-hidden aspect-[4/3] bg-black border border-emerald-500/50 shadow-inner group">
                   <img 
                     src="https://images.unsplash.com/photo-1592417817098-8f3d6ef23961?auto=format&fit=crop&w=700&q=80" 
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450"><rect width="600" height="450" fill="%230A261D"/><ellipse cx="300" cy="225" rx="220" ry="140" fill="%231E5638"/><path d="M120,225 C200,100 400,100 480,225 C400,350 200,350 120,225 Z" fill="%232D6A4F"/><ellipse cx="270" cy="200" rx="80" ry="55" fill="%234A2E18"/><ellipse cx="255" cy="190" rx="55" ry="35" fill="%231E120B"/><ellipse cx="340" cy="240" rx="40" ry="30" fill="%23E6A122" opacity="0.65"/><line x1="120" y1="225" x2="480" y2="225" stroke="%2352B788" stroke-width="3" stroke-dasharray="6,6"/></svg>';
+                    }}
                     alt="Diseased Leaf Sample" 
                     className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-700 filter contrast-110"
                   />
