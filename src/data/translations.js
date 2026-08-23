@@ -1,4 +1,4 @@
-export const translations = {
+export const rawTranslations = {
   en: {
     nav: {
       brand: 'KrushiRaksha',
@@ -60,6 +60,66 @@ export const translations = {
       p6Badge: 'Governance',
       p6Title: 'Officials Command Dashboard',
       p6Desc: 'Real-time monitoring, reporting, and decision support for agriculture officials and district commissioners.'
+    },
+    process: {
+      tag: 'THE PROCESS',
+      title: 'From field to fix — in minutes.',
+      s1Num: '1',
+      s1Title: 'Scan & Report',
+      s1Desc: 'Farmers capture leaf photos or connect live camera. GPS location and crop stage auto-appended.',
+      s2Num: '2',
+      s2Title: 'AI Diagnoses',
+      s2Desc: 'Our YOLO & ResNet model cross-references symptoms with 50+ disease profiles for a confident diagnosis.',
+      s3Num: '3',
+      s3Title: 'Act & Monitor',
+      s3Desc: 'Receive CIBRC tailored treatment plans with precision dosage and safe spray weather timing.'
+    },
+    roles: {
+      title: 'One platform, three roles.',
+      subtitle: 'Different interfaces, permissions, and views — tailored to how each user actually works in the field.',
+      tabFarmer: 'Farmers',
+      tabOfficer: 'Extension Workers',
+      tabGovt: 'Agriculture Officials',
+      farmerTag: 'INSTANT DIAGNOSIS. LOCAL LANGUAGE. SAFE TREATMENT.',
+      farmerTitle: 'Your field doctor, in your pocket',
+      farmerF1: 'Photograph a diseased leaf — get a diagnosis in 30 seconds',
+      farmerF2: 'Get safe treatment & local advice in your own language',
+      farmerF3: 'Save your crops. Save your income. Save your season.',
+      officerTag: 'FIELD VALIDATION. RAPID RESPONSE. SURVEILLANCE.',
+      officerTitle: 'Empowering extension teams on the ground',
+      officerF1: 'Geo-tagged field inspection queues & verification workflows',
+      officerF2: 'Direct audio/chat advisory dispatch to affected farmer clusters',
+      officerF3: 'Lab sample submission and active ground-truth validation',
+      govtTag: 'MACRO EPIDEMIOLOGY. POLICY. DISASTER PREVENTION.',
+      govtTitle: 'State-wide epidemic surveillance & supply chain command',
+      govtF1: 'District-level disease spread heatmaps & contagion velocity vectors',
+      govtF2: 'Automated 10km SMS quarantine broadcast to containment zones',
+      govtF3: 'Active learning pipeline monitoring AI drift and regional pathogen variations'
+    },
+    pilot: {
+      tag: 'PILOT IMPACT DATA — NASHIK DISTRICT',
+      title: 'Early detection saves crops.',
+      subtitle: 'As detection rates rise, crop loss scores fall. Pilot data tells the story.',
+      kpi1Val: '2,847',
+      kpi1Label: 'Diseases Detected',
+      kpi1Change: '+34% this month',
+      kpi2Val: '28 sec',
+      kpi2Label: 'Avg Detection Time',
+      kpi2Change: 'vs. 4+ days earlier',
+      kpi3Val: '₹1.2 Cr',
+      kpi3Label: 'Crop Loss Prevented',
+      kpi3Change: 'across 340 farms',
+      kpi4Val: '8',
+      kpi4Label: 'Active Districts',
+      kpi4Change: 'Maharashtra pilot'
+    },
+    cta: {
+      badge: 'AVAILABLE ON WEB & MOBILE · FREE FOR FARMERS',
+      title: 'Ready to protect your harvest?',
+      subtitle: 'Join thousands of farmers already using KrushiRaksha to catch diseases early and save their crops. Works on 2G feature phones via offline SMS.',
+      btnDownload: 'Download App — Free',
+      btnOfficer: 'Officer Portal',
+      note: 'No credit card required. Government supported initiative.'
     }
   },
 
@@ -124,6 +184,66 @@ export const translations = {
       p6Badge: 'प्रशासन',
       p6Title: 'कृषि अधिकारी कमांड डैशबोर्ड',
       p6Desc: 'कृषि अधिकारियों के लिए राज्यव्यापी निगरानी और निर्णय समर्थन प्रणाली।'
+    },
+    process: {
+      tag: 'प्रक्रिया',
+      title: 'खेत से समाधान तक — मिनटों में।',
+      s1Num: '1',
+      s1Title: 'स्कैन और रिपोर्ट',
+      s1Desc: 'पत्तियों की फोटो लें या लाइव कैमरा चालू करें। जीपीएस स्थान स्वतः दर्ज होता है।',
+      s2Num: '2',
+      s2Title: 'एआई निदान',
+      s2Desc: 'हमारा एआई मॉडल 50+ रोगों के लक्षणों की जांच कर सटीक परिणाम देता है।',
+      s3Num: '3',
+      s3Title: 'उपचार और निगरानी',
+      s3Desc: 'सीआईबीआरसी अनुमोदित सटीक खुराक और मौसम अनुसार सुरक्षित छिड़काव समय प्राप्त करें।'
+    },
+    roles: {
+      title: 'एक मंच, तीन भूमिकाएं।',
+      subtitle: 'प्रत्येक उपयोगकर्ता की आवश्यकतानुसार विशेष डैशबोर्ड।',
+      tabFarmer: 'किसान',
+      tabOfficer: 'कृषि अधिकारी',
+      tabGovt: 'सरकार व प्रशासन',
+      farmerTag: 'त्वरित निदान. स्थानीय भाषा. सुरक्षित उपचार.',
+      farmerTitle: 'आपकी जेब में आपका फसल डॉक्टर',
+      farmerF1: 'रोगग्रस्त पत्ती का फोटो लें — 30 सेकंड में निदान पाएं',
+      farmerF2: 'अपनी भाषा में सुरक्षित उपचार और स्थानीय सलाह प्राप्त करें',
+      farmerF3: 'अपनी फसल और आय बचाएं',
+      officerTag: 'क्षेत्रीय सत्यापन. त्वरित प्रतिक्रिया.',
+      officerTitle: 'जमीनी टीमों को सशक्त बनाना',
+      officerF1: 'जियो-टैग्ड निरीक्षण और सत्यापन कार्यप्रवाह',
+      officerF2: 'प्रभावित किसानों को सीधे ऑडियो/संदेश सलाह भेजना',
+      officerF3: 'लैब नमूना सत्यापन और जमीनी निगरानी',
+      govtTag: 'महामारी निगरानी. नीति. आपदा रोकथाम.',
+      govtTitle: 'राज्यव्यापी निगरानी व कमान केंद्र',
+      govtF1: 'जिलावार रोग प्रसार हीटमैप और फैलाव गति',
+      govtF2: 'कंटेनमेंट जोन में स्वचालित एसएमएस अलर्ट',
+      govtF3: 'रोग प्रसार रोकने के लिए सक्रिय एआई ट्रैकिंग'
+    },
+    pilot: {
+      tag: 'पायलट प्रभाव डेटा',
+      title: 'शीघ्र पहचान से फसल बचती है।',
+      subtitle: 'जैसे-जैसे पहचान बढ़ती है, फसल का नुकसान कम होता जाता है।',
+      kpi1Val: '2,847',
+      kpi1Label: 'रोग पहचाने गए',
+      kpi1Change: '+34% इस माह',
+      kpi2Val: '28 सेकंड',
+      kpi2Label: 'औसत पहचान समय',
+      kpi2Change: 'पहले 4+ दिन लगते थे',
+      kpi3Val: '₹1.2 करोड़',
+      kpi3Label: 'फसल नुकसान बचाया',
+      kpi3Change: '340+ खेतों में',
+      kpi4Val: '8',
+      kpi4Label: 'सक्रिय जिले',
+      kpi4Change: 'पायलट चरण'
+    },
+    cta: {
+      badge: 'वेब और मोबाइल पर उपलब्ध · किसानों के लिए निःशुल्क',
+      title: 'अपनी फसल की सुरक्षा के लिए तैयार हैं?',
+      subtitle: 'हजारों किसानों के साथ जुड़ें जो कृषिरक्षा का उपयोग करके फसल बचा रहे हैं। 2जी फोन पर एसएमएस से भी काम करता है।',
+      btnDownload: 'ऐप डाउनलोड करें — निःशुल्क',
+      btnOfficer: 'अधिकारी पोर्टल',
+      note: 'क्रेडिट कार्ड की आवश्यकता नहीं। सरकार समर्थित पहल।'
     }
   },
 
@@ -188,518 +308,93 @@ export const translations = {
       p6Badge: 'प्रशासन',
       p6Title: 'शासकीय नियंत्रण कक्ष डॅशबोर्ड',
       p6Desc: 'कृषी अधिकारी व जिल्हाधिकाऱ्यांसाठी राज्यव्यापी देखरेख प्रणाली.'
-    }
-  },
-
-  pa: {
-    nav: {
-      brand: 'ਕ੍ਰਿਸ਼ੀਰਕਸ਼ਾ',
-      tagline: 'AI ਫਸਲ ਸਿਹਤ ਅਤੇ ਨਿਗਰਾਨੀ',
-      features: 'ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ',
-      howItWorks: 'ਇਹ ਕਿਵੇਂ ਕੰਮ ਕਰਦਾ ਹੈ',
-      forFarmers: 'ਕਿਸਾਨਾਂ ਲਈ',
-      dashboard: 'ਰੋਲ ਹੱਬ',
-      signIn: 'ਸਾਈਨ ਇਨ',
-      getStarted: 'ਮੁਫ਼ਤ ਸ਼ੁਰੂ ਕਰੋ',
-      scanCrop: 'ਫਸਲ ਸਕੈਨ ਕਰੋ',
-      viewDashboard: 'ਡੈਸ਼ਬੋਰਡ ਦੇਖੋ',
-      helpline: 'ਹੈਲਪਲਾਈਨ: 1800-ਕ੍ਰਿਸ਼ੀ',
-      offlineMode: 'ਔਫਲਾਈਨ ਮੋਡ ਉਪਲਬਧ',
-      role: 'ਸਰਗਰਮ ਭੂਮਿਕਾ'
     },
-    hero: {
-      badge: '★ SIH 2026 - ਸਮੱਸਿਆ ਆਈਡੀ 26131',
-      headlineStart: 'ਫਸਲ ਦੀ ਬਿਮਾਰੀ ਪਛਾਣੋ',
-      headlineAccent: 'ਫੈਲਣ ਤੋਂ ਪਹਿਲਾਂ।',
-      subtitle: 'ਫਸਲਾਂ ਦੀਆਂ ਬਿਮਾਰੀਆਂ ਅਤੇ ਕੀੜਿਆਂ ਦੇ ਹਮਲੇ ਦੀ ਤੁਰੰਤ ਪਛਾਣ ਲਈ AI-ਅਧਾਰਤ ਪਲੇਟਫਾਰਮ — ਭਾਰਤੀ ਕਿਸਾਨਾਂ ਲਈ ਸਮਰਪਿਤ।',
-      statDiseases: '50+ ਫਸਲਾਂ ਦੀਆਂ ਬਿਮਾਰੀਆਂ ਦੀ ਪਛਾਣ',
-      statLanguages: 'ਪੰਜਾਬੀ ਸਮੇਤ 11+ ਖੇਤੀਬਾੜੀ ਭਾਸ਼ਾਵਾਂ',
-      statFarms: '340+ ਪਾਇਲਟ ਖੇਤ',
-      liveDemo: 'ਲਾਈਵ ਵਿਸ਼ਲੇਸ਼ਣ ਇੰਜਣ',
-      detecting: 'ਪੱਤੇ ਦਾ ਵਿਸ਼ਲੇਸ਼ਣ ਹੋ ਰਿਹਾ ਹੈ...',
-      sampleCrop: 'ਕਣਕ / ਟਮਾਟਰ ਦਾ ਪੱਤਾ',
-      diagnosis: 'ਪਛੇਤੀ ਝੁਲਸਾ (Late Blight)',
-      confidence: '94% ਸ਼ੁੱਧਤਾ',
-      scientific: 'ਫਾਈਟੋਫਥੋਰਾ - ਗੰਭੀਰਤਾ: ਦਰਮਿਆਨੀ',
-      action: 'ਸਿਫਾਰਸ਼ ਕੀਤੀ ਕਾਰਵਾਈ: ਸਹੀ ਉੱਲੀਨਾਸ਼ਕ ਦਾ ਛਿੜਕਾਅ ਕਰੋ।'
+    process: {
+      tag: 'कार्यपद्धती',
+      title: 'शेतापासून उपायापर्यंत — काही मिनिटांत.',
+      s1Num: '१',
+      s1Title: 'स्कॅन करा व नोंदवा',
+      s1Desc: 'पानांचा फोटो काढा किंवा थेट कॅमेरा सुरू करा. जीपीएस लोकेशन आपोआप जोडले जाते.',
+      s2Num: '२',
+      s2Title: 'एआय निदान',
+      s2Desc: 'आमचे एआय मॉडेल ५०+ रोगांच्या लक्षणांशी जुळवून अचूक निदान देते.',
+      s3Num: '३',
+      s3Title: 'उपाय व नियंत्रण',
+      s3Desc: 'सीआयबीआरसी प्रमाणित औषधांचे अचूक प्रमाण आणि फवारणीच्या सुरक्षित वेळेचा सल्ला मिळवा.'
     },
-    metrics: {
-      stat1Val: '72%',
-      stat1Desc: 'ਕਿਸਾਨ ਨੁਕਸਾਨ ਦਿਖਣ ਤੋਂ ਬਾਅਦ ਹੀ ਬਿਮਾਰੀ ਪਛਾਣਦੇ ਹਨ',
-      stat2Val: '₹6,000',
-      stat2Desc: 'ਦੇਰੀ ਕਾਰਨ ਪ੍ਰਤੀ ਏਕੜ ਔਸਤਨ ਫਸਲ ਦਾ ਨੁਕਸਾਨ',
-      stat3Val: '50+',
-      stat3Desc: 'ਬਿਮਾਰੀਆਂ ਹੁਣ 30 ਸਕਿੰਟਾਂ ਵਿੱਚ ਪਛਾਣੀਆਂ ਜਾ ਸਕਦੀਆਂ ਹਨ'
+    roles: {
+      title: 'एक व्यासपीठ, तीन भूमिका.',
+      subtitle: 'प्रत्येक घटकाच्या गरजेनुसार स्वतंत्र डॅशबोर्ड.',
+      tabFarmer: 'शेतकरी',
+      tabOfficer: 'कृषी अधिकारी',
+      tabGovt: 'शासकीय प्रशासन',
+      farmerTag: 'त्वरित निदान. स्थानिक भाषा. सुरक्षित उपाय.',
+      farmerTitle: 'तुमच्या खिशातील पीक डॉक्टर',
+      farmerF1: 'रोगाचे फोटो काढा — ३० सेकंदात अचूक निदान मिळवा',
+      farmerF2: 'मराठीत सुरक्षित उपाय आणि फवारणी सल्ला मिळवा',
+      farmerF3: 'आपली पिके आणि उत्पन्न वाचवा',
+      officerTag: 'क्षेत्रीय पडताळणी. त्वरित प्रतिसाद.',
+      officerTitle: 'कृषी सहाय्यकांना सक्षम करणे',
+      officerF1: 'जिओ-टॅग केलेली तपासणी व पडताळणी',
+      officerF2: 'बाधित शेतकऱ्यांना थेट ऑडिओ संदेश पाठवणे',
+      officerF3: 'प्रयोगशाळा नमुने तपासणी व थेट नियंत्रण',
+      govtTag: 'साथरोग नियंत्रण. धोरण. आपत्ती निवारण.',
+      govtTitle: 'राज्यव्यापी पीक आरोग्य नियंत्रण कक्ष',
+      govtF1: 'जिल्हास्तरीय रोग प्रसार नकाशे व फैलावाचा वेग',
+      govtF2: 'प्रतिबंधित भागात स्वयंचलित एसएमएस सतर्कता',
+      govtF3: 'रोग नियंत्रणासाठी धोरणात्मक निर्णय प्रणाली'
     },
-    pillars: {
-      title: 'ਫਸਲਾਂ ਦੀ ਸੁਰੱਖਿਆ ਲਈ ਹਰ ਜ਼ਰੂਰੀ ਸਾਧਨ।',
-      subtitle: 'ਭਾਰਤੀ ਕਿਸਾਨਾਂ ਦੀਆਂ ਲੋੜਾਂ ਅਨੁਸਾਰ ਤਿਆਰ ਕੀਤਾ ਗਿਆ।',
-      p1Badge: 'ਮੁੱਖ',
-      p1Title: 'AI ਚਿੱਤਰ ਜਾਂਚ ਅਤੇ ਯੋਲੋ ਲਾਈਵ ਕੈਮਰਾ',
-      p1Desc: 'ਬਿਮਾਰ ਪੱਤੇ ਦੀ ਫੋਟੋ ਲਓ ਜਾਂ ਕੈਮਰਾ ਚਲਾਓ। ਕੁਝ ਸਕਿੰਟਾਂ ਵਿੱਚ ਸਹੀ ਨਿਦਾਨ ਪ੍ਰਾਪਤ ਕਰੋ।',
-      p2Badge: 'ਭਵਿੱਖਬਾਣੀ',
-      p2Title: 'ਲਾਈਵ ਮੌਸਮ ਖ਼ਤਰਾ ਅੰਦਾਜ਼ਾ',
-      p2Desc: 'ਮੌਸਮ ਦੇ ਅੰਕੜਿਆਂ ਦੇ ਆਧਾਰ ਤੇ 7 ਦਿਨ ਪਹਿਲਾਂ ਬਿਮਾਰੀ ਦੇ ਖ਼ਤਰੇ ਦਾ ਪਤਾ ਲਗਾਓ।',
-      p3Badge: 'ਨਿਗਰਾਨੀ',
-      p3Title: 'ਜਿਓਸਪੇਸ਼ੀਅਲ ਹੌਟਸਪੌਟ ਨਕਸ਼ੇ',
-      p3Desc: 'ਬਿਮਾਰੀ ਦੇ ਫੈਲਾਅ ਨੂੰ ਰੋਕਣ ਲਈ ਜ਼ਿਲ੍ਹੇ ਦੇ ਲਾਈਵ ਨਕਸ਼ੇ।',
-      p4Badge: 'ਮਾਹਿਰ',
-      p4Title: 'KVK ਮਾਹਿਰ ਨੈੱਟਵਰਕ',
-      p4Desc: 'ਸਹੀ ਸਲਾਹ ਲਈ ਖੇਤੀਬਾੜੀ ਵਿਗਿਆਨ ਕੇਂਦਰਾਂ ਨਾਲ ਸੰਪਰਕ ਕਰੋ।',
-      p5Badge: 'ਭਾਸ਼ਾ',
-      p5Title: 'ਪੰਜਾਬੀ ਆਵਾਜ਼ ਸਲਾਹ',
-      p5Desc: 'ਆਪਣੀ ਮਾਂ-ਬੋਲੀ ਵਿੱਚ ਇਲਾਜ ਦੇ ਨਿਰਦੇਸ਼ ਸੁਣੋ।',
-      p6Badge: 'ਪ੍ਰਬੰਧਨ',
-      p6Title: 'ਅਧਿਕਾਰੀ ਕਮਾਂਡ ਡੈਸ਼ਬੋਰਡ',
-      p6Desc: 'ਖੇਤੀਬਾੜੀ ਅਧਿਕਾਰੀਆਂ ਲਈ ਸੂਬਾ-ਪੱਧਰੀ ਨਿਗਰਾਨੀ ਪ੍ਰਣਾਲੀ।'
-    }
-  },
-
-  kn: {
-    nav: {
-      brand: 'ಕೃಷಿರಕ್ಷಾ',
-      tagline: 'AI ಬೆಳೆ ಆರೋಗ್ಯ ಮತ್ತು ಕಣ್ಗಾವಲು',
-      features: 'ವೈಶಿಷ್ಟ್ಯಗಳು',
-      howItWorks: 'ಇದು ಹೇಗೆ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ',
-      forFarmers: 'ರೈತರಿಗಾಗಿ',
-      dashboard: 'ಪಾತ್ರ ಕೇಂದ್ರ',
-      signIn: 'ಸೈನ್ ಇನ್',
-      getStarted: 'ಉಚಿತವಾಗಿ ಪ್ರಾರಂಭಿಸಿ',
-      scanCrop: 'ಬೆಳೆ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ',
-      viewDashboard: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ವೀಕ್ಷಿಸಿ',
-      helpline: 'ಸಹಾಯವಾಣಿ: 1800-ಕೃಷಿ',
-      offlineMode: 'ಆಫ್‌ಲೈನ್ ಮೋಡ್ ಸಿದ್ಧ',
-      role: 'ಸಕ್ರಿಯ ಪಾತ್ರ'
+    pilot: {
+      tag: 'पायलट चाचणी निकाल — नाशिक जिल्हा',
+      title: 'लवकर निदानामुळे पिकांचे रक्षण होते.',
+      subtitle: 'नाशिक जिल्ह्यातील पायलट चाचणीचे सकारात्मक परिणाम.',
+      kpi1Val: '२,८४७',
+      kpi1Label: 'रोग ओळखले',
+      kpi1Change: '+३४% या महिन्यात',
+      kpi2Val: '२८ सेकंद',
+      kpi2Label: 'सरासरी निदान वेळ',
+      kpi2Change: 'पूर्वी ४+ दिवस लागायचे',
+      kpi3Val: '₹१.२ कोटी',
+      kpi3Label: 'पीक नुकसान वाचवले',
+      kpi3Change: '३४०+ शेतांमध्ये',
+      kpi4Val: '८',
+      kpi4Label: 'सक्रिय जिल्हे',
+      kpi4Change: 'पायलट टप्पा'
     },
-    hero: {
-      badge: '★ SIH 2026 - ಸಮಸ್ಯೆ ಐಡಿ 26131',
-      headlineStart: 'ಬೆಳೆ ರೋಗಗಳನ್ನು ಪತ್ತೆಹಚ್ಚಿ',
-      headlineAccent: 'ಹರಡುವ ಮುನ್ನವೇ.',
-      subtitle: 'ಬೆಳೆ ರೋಗಗಳು ಮತ್ತು ಕೀಟಗಳ ಆರಂಭಿಕ ಪತ್ತೆ ಮತ್ತು ನಿರ್ವಹಣೆಗಾಗಿ AI-ಚಾಲಿತ ವೇದಿಕೆ — ಭಾರತೀಯ ರೈತರಿಗಾಗಿ ನಿರ್ಮಿಸಲಾಗಿದೆ.',
-      statDiseases: '50+ ಬೆಳೆ ರೋಗಗಳ ಪತ್ತೆ',
-      statLanguages: 'ಕನ್ನಡ ಸೇರಿದಂತೆ 11+ ಕೃಷಿ ಭಾಷೆಗಳು',
-      statFarms: '340+ ಪ್ರಾಯೋಗಿಕ ಜಮೀನುಗಳು',
-      liveDemo: 'ಲೈವ್ ವಿಶ್ಲೇಷಣೆ ಎಂಜಿನ್',
-      detecting: 'ಎಲೆಯ ವಿಶ್ಲೇಷಣೆ ನಡೆಯುತ್ತಿದೆ...',
-      sampleCrop: 'ಟೊಮೆಟೊ ಎಲೆ · ಧಾರವಾಡ/ನಾಸಿಕ್',
-      diagnosis: 'ಲೇಟ್ ಬ್ಲೈಟ್ (Late Blight)',
-      confidence: '94% ನಿಖರತೆ',
-      scientific: 'ಫೈಟೊಫ್ಥೊರಾ - ತೀವ್ರತೆ: ಮಧ್ಯಮ',
-      action: 'ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮ: ಶಿಲೀಂಧ್ರನಾಶಕವನ್ನು ಸಿಂಪಡಿಸಿ. 3 ದಿನಗಳಲ್ಲಿ ಪರಿಶೀಲಿಸಿ.'
-    },
-    metrics: {
-      stat1Val: '72%',
-      stat1Desc: 'ರೈತರು ಹಾನಿ ಕಂಡ ನಂತರವೇ ರೋಗವನ್ನು ಗುರುತಿಸುತ್ತಾರೆ',
-      stat2Val: '₹6,000',
-      stat2Desc: 'ವಿಳಂಬ ಚಿಕಿತ್ಸೆಯಿಂದ ಪ್ರತಿ ಎಕರೆಗೆ ಸರಾಸರಿ ನಷ್ಟ',
-      stat3Val: '50+',
-      stat3Desc: 'AI ಮೂಲಕ 30 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ರೋಗ ಪತ್ತೆ'
-    },
-    pillars: {
-      title: 'ಬೆಳೆ ರೋಗಗಳ ವಿರುದ್ಧ ಹೋರಾಡಲು ಸಂಪೂರ್ಣ ಪರಿಹಾರ.',
-      subtitle: 'ಭಾರತೀಯ ರೈತರ ಅಗತ್ಯಕ್ಕೆ ತಕ್ಕಂತೆ ವಿನ್ಯಾಸಗೊಳಿಸಲಾಗಿದೆ.',
-      p1Badge: 'ಮುಖ್ಯ',
-      p1Title: 'AI ಚಿತ್ರ ರೋಗನಿರ್ಣಯ ಮತ್ತು ಯೋಲೋ ಲೈವ್ ಕ್ಯಾಮೆರಾ',
-      p1Desc: 'ಸೋಂಕಿತ ಎಲೆಯ ಫೋಟೋ ತೆಗೆಯಿರಿ ಅಥವಾ ಲೈವ್ ಕ್ಯಾಮೆರಾ ಬಳಸಿ. ತಕ್ಷಣವೇ ರೋಗ ಪತ್ತೆ ಮಾಡಿ.',
-      p2Badge: 'ಮುನ್ಸೂಚನೆ',
-      p2Title: 'ಲೈವ್ ಹವಾಮಾನ ಅಪಾಯ ಮುನ್ಸೂಚನೆ',
-      p2Desc: '7 ದಿನಗಳ ಮುಂಚಿತವಾಗಿ ರೋಗ ಹರಡುವ ಅಪಾಯವನ್ನು ಮುನ್ಸೂಚಿಸುವ ಲೈವ್ ಹವಾಮಾನ ದತ್ತಾಂಶ.',
-      p3Badge: 'ಕಣ್ಗಾವಲು',
-      p3Title: 'ಜಿಯೋಸ್ಪೇಷಿಯಲ್ ಹಾಟ್‌ಸ್ಪಾಟ್ ನಕ್ಷೆಗಳು',
-      p3Desc: 'ರೋಗ ನಿಯಂತ್ರಣಕ್ಕಾಗಿ ಲೈವ್ ಹೀಟ್‌ಮ್ಯಾಪ್‌ಗಳು.',
-      p4Badge: 'ತಜ್ಞರು',
-      p4Title: 'KVK ತಜ್ಞರ ಜಾಲ',
-      p4Desc: 'ಕೃಷಿ ವಿಜ್ಞಾನ ಕೇಂದ್ರಗಳ ತಜ್ಞರಿಂದ ತಕ್ಷಣದ ಪರಿಹಾರ ಪಡೆಯಿರಿ.',
-      p5Badge: 'ಭಾಷೆ',
-      p5Title: 'ಕನ್ನಡ ಧ್ವನಿ ಸಲಹೆ',
-      p5Desc: 'ಕನ್ನಡದಲ್ಲಿ ಚಿಕಿತ್ಸಾ ಮಾರ್ಗದರ್ಶನ ಮತ್ತು ಧ್ವನಿ ಸಂದೇಶಗಳನ್ನು ಆಲಿಸಿ.',
-      p6Badge: 'ಆಡಳಿತ',
-      p6Title: 'ಕೃಷಿ ಅಧಿಕಾರಿಗಳ ಕಮಾಂಡ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
-      p6Desc: 'ಕೃಷಿ ಅಧಿಕಾರಿಗಳಿಗಾಗಿ ರಾಜ್ಯ ಮಟ್ಟದ ನಿಗಾ ವ್ಯವಸ್ಥೆ.'
-    }
-  },
-
-  te: {
-    nav: {
-      brand: 'కృషిరక్ష',
-      tagline: 'AI పంట ఆరోగ్యం & నిఘా',
-      features: 'ఫీచర్లు',
-      howItWorks: 'ఎలా పనిచేస్తుంది',
-      forFarmers: 'రైతుల కోసం',
-      dashboard: 'రోల్ హబ్',
-      signIn: 'సైన్ ఇన్',
-      getStarted: 'ఉచితంగా ప్రారంభించండి',
-      scanCrop: 'పంటను స్కాన్ చేయండి',
-      viewDashboard: 'డ్యాష్‌బోర్డ్ చూడండి',
-      helpline: 'హెల్ప్‌లైన్: 1800-కృషి',
-      offlineMode: 'ఆఫ్‌లైన్ మోడ్ సిద్ధం',
-      role: 'యాక్టివ్ రోల్'
-    },
-    hero: {
-      badge: '★ SIH 2026 - సమస్య ఐడీ 26131',
-      headlineStart: 'పంట తెగుళ్లను గుర్తించండి',
-      headlineAccent: 'వ్యాపించక ముందే.',
-      subtitle: 'పంట తెగుళ్లు మరియు పురుగుల ముందస్తు గుర్తింపు కోసం AI ప్లాట్‌ఫారమ్ — భారతీయ రైతుల కోసం రూపొందించబడింది.',
-      statDiseases: '50+ పంట తెగుళ్ల గుర్తింపు',
-      statLanguages: 'తెలుగుతో సహా 11+ వ్యవసాయ భాషలు',
-      statFarms: '340+ పైలట్ ఫామ్‌లు',
-      liveDemo: 'లైవ్ విశ్లేషణ ఇంజిన్',
-      detecting: 'ఆకును విశ్లేషిస్తోంది...',
-      sampleCrop: 'టమాట / పత్తి ఆకు · గుంటూరు',
-      diagnosis: 'లేట్ బ్లైట్ తెగులు',
-      confidence: '94% ఖచ్చితత్వం',
-      scientific: 'ఫైటోఫ్తోరా - తీవ్రత: మధ్యస్థం',
-      action: 'సిఫార్సు చేసిన చర్య: సిఫార్సు చేసిన మందులను పిచికారీ చేయండి.'
-    },
-    metrics: {
-      stat1Val: '72%',
-      stat1Desc: 'రైతులు నష్టం జరిగిన తర్వాతే తెగుళ్లను గుర్తిస్తున్నారు',
-      stat2Val: '₹6,000',
-      stat2Desc: 'ఆలస్యమైన చికిత్స వల్ల ఎకరాకు సగటు నష్టం',
-      stat3Val: '50+',
-      stat3Desc: '30 సెకన్లలోపు AI ద్వారా తెగుళ్ల గుర్తింపు'
-    },
-    pillars: {
-      title: 'పంట రక్షణకు సమగ్ర పరిష్కారం.',
-      subtitle: 'భారతీయ రైతుల క్షేత్రస్థాయి అవసరాలకు అనుగుణంగా రూపొందించబడింది.',
-      p1Badge: 'కోర్',
-      p1Title: 'AI ఇమేజ్ డయాగ్నోసిస్ & YOLO లైవ్ కెమెరా',
-      p1Desc: 'ఆకు ఫోటో తీయండి లేదా లైవ్ కెమెరా వాడండి. క్షణాల్లో ఖచ్చితమైన నిర్ధారణ పొందండి.',
-      p2Badge: 'ప్రిడిక్టివ్',
-      p2Title: 'లైవ్ వాతావరణ ముప్పు అంచనా',
-      p2Desc: 'వాతావరణ డేటా ఆధారంగా 7 రోజుల ముందే తెగుళ్ల ముప్పును అంచనా వేయండి.',
-      p3Badge: 'నిఘా',
-      p3Title: 'హాట్‌స్పాట్ జియో మ్యాప్స్',
-      p3Desc: 'తెగుళ్ల వ్యాప్తిని నిరోధించేందుకు లైవ్ మ్యాప్‌లు.',
-      p4Badge: 'నిపుణులు',
-      p4Title: 'KVK నిపుణుల నెట్‌వర్క్',
-      p4Desc: 'కృషి విజ్ఞాన కేంద్రాల నిపుణుల నుండి సలహాలు పొందండి.',
-      p5Badge: 'భాష',
-      p5Title: 'తెలుగు వాయిస్ అడ్వైజరీ',
-      p5Desc: 'తెలుగులో సమగ్ర చికిత్స సూచనలు మరియు ఆడియో వినండి.',
-      p6Badge: 'పాలన',
-      p6Title: 'అధికారుల కమాండ్ డ్యాష్‌బోర్డ్',
-      p6Desc: 'వ్యవసాయ అధికారుల కోసం రాష్ట్ర స్థాయి పర్యవేక్షణ వ్యవస్థ.'
-    }
-  },
-
-  ta: {
-    nav: {
-      brand: 'கிருஷிரக்ஷா',
-      tagline: 'AI பயிர் நலம் மற்றும் கண்காணிப்பு',
-      features: 'அம்சங்கள்',
-      howItWorks: 'எப்படி செயல்படுகிறது',
-      forFarmers: 'விவசாயிகளுக்கு',
-      dashboard: 'பங்கு மையம்',
-      signIn: 'உள்நுழைக',
-      getStarted: 'இலவசமாக தொடங்குங்கள்',
-      scanCrop: 'பயிரை ஸ்கேன் செய்க',
-      viewDashboard: 'டாஷ்போர்டு பார்க்க',
-      helpline: 'உதவி எண்: 1800-கிருஷி',
-      offlineMode: 'ஆஃப்லைன் முறை தயார்',
-      role: 'செயலில் உள்ள பங்கு'
-    },
-    hero: {
-      badge: '★ SIH 2026 - சிக்கல் ஐடி 26131',
-      headlineStart: 'பயிர் நோய்களை கண்டறியுங்கள்',
-      headlineAccent: 'பரவுவதற்கு முன்பே.',
-      subtitle: 'பயிர் நோய்கள் மற்றும் பூச்சி தாக்குதல்களை ஆரம்பத்திலேயே கண்டறிய AI தளம் — இந்திய விவசாயிகளுக்காக உருவாக்கப்பட்டது.',
-      statDiseases: '50+ பயிர் நோய்கள் கண்டறிதல்',
-      statLanguages: 'தமிழ் உட்பட 11+ மொழிகள்',
-      statFarms: '340+ முன்னோடி பண்ணைகள்',
-      liveDemo: 'நேரடி பகுப்பாய்வு இயந்திரம்',
-      detecting: 'இலை பகுப்பாய்வு செய்யப்படுகிறது...',
-      sampleCrop: 'தக்காளி / நெல் இலை · தஞ்சாவூர்',
-      diagnosis: 'லேட் பிளைட் நோய்',
-      confidence: '94% துல்லியம்',
-      scientific: 'பைட்டோபதோரா - தீவிரம்: நடுத்தரமானது',
-      action: 'பரிந்துரைக்கப்பட்ட நடவடிக்கை: பூஞ்சாணக்கொல்லியை தெளிக்கவும்.'
-    },
-    metrics: {
-      stat1Val: '72%',
-      stat1Desc: 'சேதம் ஏற்பட்ட பிறகே விவசாயிகள் நோயை அறிகிறார்கள்',
-      stat2Val: '₹6,000',
-      stat2Desc: 'தாமதமான சிகிச்சையால் ஏக்கருக்கு ஏற்படும் சராசரி இழப்பு',
-      stat3Val: '50+',
-      stat3Desc: '30 வினாடிகளில் AI மூலம் நோய் கண்டறிதல்'
-    },
-    pillars: {
-      title: 'பயிர் பாதுகாப்புக்கான முழுமையான தீர்வு.',
-      subtitle: 'விவசாயிகளின் களப்பணிக்கு ஏற்ப வடிவமைக்கப்பட்டது.',
-      p1Badge: 'முக்கிய',
-      p1Title: 'AI பட கண்டறிதல் & YOLO நேரடி கேமரா',
-      p1Desc: 'பாதிக்கப்பட்ட இலையின் புகைப்படத்தை எடுத்து நொடிகளில் துல்லியமான நோயறிதலைப் பெறுங்கள்.',
-      p2Badge: 'முன்கணிப்பு',
-      p2Title: 'நேரடி வானிலை அபாய முன்னறிவிப்பு',
-      p2Desc: '7 நாட்களுக்கு முன்பே நோய் பரவும் அபாயத்தை முன்கூட்டியே அறியும் வானிலை தகவல்.',
-      p3Badge: 'கண்காணிப்பு',
-      p3Title: 'ஹாட்ஸ்பாட் வரைபடங்கள்',
-      p3Desc: 'நோய் பரவலை தடுப்பதற்கான நேரடி வரைபடங்கள்.',
-      p4Badge: 'நிபுணர்கள்',
-      p4Title: 'KVK வேளாண் வல்லுநர் வலையமைப்பு',
-      p4Desc: 'வேளாண் அறிவியல் மைய நிபுணர்களிடம் இருந்து நேரடி ஆலோசனை.',
-      p5Badge: 'மொழி',
-      p5Title: 'தமிழ் குரல் வழி ஆலோசனை',
-      p5Desc: 'தமிழில் தெளிவான சிகிச்சை முறைகள் மற்றும் ஆடியோ வழிகாட்டல்.',
-      p6Badge: 'நிர்வாகம்',
-      p6Title: 'அதிகாரிகள் கட்டளை டாஷ்போர்டு',
-      p6Desc: 'வேளாண் துறை அதிகாரிகளுக்கான மாநில அளவிலான கண்காணிப்பு.'
-    }
-  },
-
-  bn: {
-    nav: {
-      brand: 'কৃষিরক্ষা',
-      tagline: 'AI ফসল স্বাস্থ্য ও নজরদারি',
-      features: 'বৈশিষ্ট্য',
-      howItWorks: 'কীভাবে কাজ করে',
-      forFarmers: 'কৃষকদের জন্য',
-      dashboard: 'রোল হাব',
-      signIn: 'সাইন ইন',
-      getStarted: 'বিনামূল্যে শুরু করুন',
-      scanCrop: 'ফসল স্ক্যান করুন',
-      viewDashboard: 'ড্যাশবোর্ড দেখুন',
-      helpline: 'হেল্পলাইন: ১৮০০-কৃষি',
-      offlineMode: 'অফলাইন মোড প্রস্তুত',
-      role: 'সক্রিয় ভূমিকা'
-    },
-    hero: {
-      badge: '★ SIH 2026 - সমস্যা আইডি ২৬১৩১',
-      headlineStart: 'ফসলের রোগ চিহ্নিত করুন',
-      headlineAccent: 'ছড়িয়ে পড়ার আগেই।',
-      subtitle: 'ফসলের রোগ এবং পোকার আক্রমণ দ্রুত শনাক্তকরণের জন্য AI-চালিত প্ল্যাটফর্ম — ভারতীয় কৃষকদের জন্য তৈরি।',
-      statDiseases: '৫০+ ফসলের রোগ শনাক্তকরণ',
-      statLanguages: 'বাংলা সহ ১১+ কৃষি ভাষা',
-      statFarms: '৩৪০+ পাইলট খামার',
-      liveDemo: 'লাইভ বিশ্লেষণ ইঞ্জিন',
-      detecting: 'পাতা বিশ্লেষণ করা হচ্ছে...',
-      sampleCrop: 'টমেটো / ধান পাতা · বর্ধমান',
-      diagnosis: 'লেট ব্লাইট (Late Blight)',
-      confidence: '৯৪% নির্ভুলতা',
-      scientific: 'ফাইটোফথোরা - তীব্রতা: মাঝারি',
-      action: 'সুপারিশকৃত পদক্ষেপ: উপযুক্ত ছত্রাকনাশক স্প্রে করুন।'
-    },
-    metrics: {
-      stat1Val: '৭২%',
-      stat1Desc: 'ক্ষতি দৃশ্যমান হওয়ার পরেই কৃষকরা রোগ বুঝতে পারেন',
-      stat2Val: '₹৬,০০০',
-      stat2Desc: 'দেরিতে চিকিৎসার কারণে একর প্রতি গড় ক্ষতি',
-      stat3Val: '৫০+',
-      stat3Desc: 'AI দ্বারা ৩০ সেকেন্ডে রোগ শনাক্তকরণ'
-    },
-    pillars: {
-      title: 'ফসল সুরক্ষার সম্পূর্ণ সমাধান।',
-      subtitle: 'ভারতীয় কৃষকদের কাজের ধরনের সাথে সামঞ্জস্যপূর্ণ।',
-      p1Badge: 'মূল',
-      p1Title: 'AI চিত্র রোগ নির্ণয় এবং YOLO লাইভ ক্যামেরা',
-      p1Desc: 'সংক্রামিত পাতার ছবি তুলুন বা লাইভ ক্যামেরা চালান। কয়েক সেকেন্ডে সঠিক ফলাফল পান।',
-      p2Badge: 'পূর্বাভাস',
-      p2Title: 'লাইভ আবহাওয়া ঝুঁকি পূর্বাভাস',
-      p2Desc: 'আবহাওয়ার তথ্যের ভিত্তিতে ৭ দিন আগে রোগের ঝুঁকির পূর্বাভাস।',
-      p3Badge: 'নজরদারি',
-      p3Title: 'হটস্পট জিআইএস মানচিত্র',
-      p3Desc: 'রোগ বিস্তার রোধের জন্য লাইভ হিটম্যাপ।',
-      p4Badge: 'বিশেষজ্ঞ',
-      p4Title: 'KVK কৃষি বিশেষজ্ঞ নেটওয়ার্ক',
-      p4Desc: 'কৃষি বিজ্ঞান কেন্দ্রের বিশেষজ্ঞদের কাছ থেকে সঠিক পরামর্শ নিন।',
-      p5Badge: 'ভাষা',
-      p5Title: 'বাংলা ভয়েস পরামর্শ',
-      p5Desc: 'বাংলায় চিকিৎসার নির্দেশনা এবং অডিও শুনুন।',
-      p6Badge: 'প্রশাসন',
-      p6Title: 'কর্মকর্তা কমান্ড ড্যাশবোর্ড',
-      p6Desc: 'কৃষি কর্মকর্তাদের জন্য রাজ্যব্যাপী নজরদারি ব্যবস্থা।'
-    }
-  },
-
-  gu: {
-    nav: {
-      brand: 'કૃષિરક્ષા',
-      tagline: 'AI પાક આરોગ્ય અને દેખરેખ',
-      features: 'સુવિધાઓ',
-      howItWorks: 'તે કેવી રીતે કાર્ય કરે છે',
-      forFarmers: 'ખેડૂતો માટે',
-      dashboard: 'રોલ હબ',
-      signIn: 'સાઇન ઇન',
-      getStarted: 'મફત શરૂ કરો',
-      scanCrop: 'પાક સ્કેન કરો',
-      viewDashboard: 'ડેશબોર્ડ જુઓ',
-      helpline: 'હેલ્પલાઇન: 1800-કૃષિ',
-      offlineMode: 'ઑફલાઇન મોડ ઉપલબ્ધ',
-      role: 'સક્રિય ભૂમિકા'
-    },
-    hero: {
-      badge: '★ SIH 2026 - સમસ્યા આઈડી 26131',
-      headlineStart: 'પાકના રોગ ઓળખો',
-      headlineAccent: 'ફેલાય તે પહેલાં.',
-      subtitle: 'પાકના રોગો અને જીવાતોના વહેલા નિદાન માટે AI-સંચાલિત પ્લેટફોર્મ — ભારતીય ખેડૂતો માટે સમર્પિત.',
-      statDiseases: '50+ પાકના રોગોની ઓળખ',
-      statLanguages: 'ગુજરાતી સહિત 11+ કૃષિ ભાષાઓ',
-      statFarms: '340+ પાયલોટ ખેતરો',
-      liveDemo: 'લાઇવ વિશ્લેષણ એન્જિન',
-      detecting: 'પાનનું વિશ્લેષણ ચાલુ છે...',
-      sampleCrop: 'કપાસ / મગફળીનું પાન · રાજકોટ',
-      diagnosis: 'પાછોતરો સુકારો (Late Blight)',
-      confidence: '94% ચોકસાઈ',
-      scientific: 'ફાઇટોફ્થોરા - તીવ્રતા: મધ્યમ',
-      action: 'ભલામણ કરેલ પગલાં: ફૂગનાશકનો છંટકાવ કરો.'
-    },
-    metrics: {
-      stat1Val: '72%',
-      stat1Desc: 'નુકસાન દેખાયા પછી જ ખેડૂતો રોગ ઓળખી શકે છે',
-      stat2Val: '₹6,000',
-      stat2Desc: 'મોડા ઉપચારને કારણે એકર દીઠ સરેરાશ નુકસાન',
-      stat3Val: '50+',
-      stat3Desc: 'AI દ્વારા 30 સેકન્ડમાં રોગની ઓળખ'
-    },
-    pillars: {
-      title: 'પાક રક્ષણ માટે સંપૂર્ણ સમાધાન.',
-      subtitle: 'ભારતીય ખેડૂતોની જરૂરિયાત મુજબ તૈયાર કરેલ.',
-      p1Badge: 'મુખ્ય',
-      p1Title: 'AI છબી નિદાન અને YOLO લાઇવ કેમેરા',
-      p1Desc: 'રોગગ્રસ્ત પાનનો ફોટો લો અથવા લાઇવ કેમેરા ચલાવો. સેકન્ડોમાં સચોટ નિદાન મેળવો.',
-      p2Badge: 'આગાહી',
-      p2Title: 'લાઇવ હવામાન જોખમ આગાહી',
-      p2Desc: 'હવામાન ડેટાના આધારે 7 દિવસ પહેલાં રોગના ફેલાવાની આગાહી.',
-      p3Badge: 'દેખરેખ',
-      p3Title: 'હોટસ્પોટ નકશાઓ',
-      p3Desc: 'રોગ ફેલાવો અટકાવવા માટે જીવંત નકશા.',
-      p4Badge: 'નિષ્ણાત',
-      p4Title: 'KVK કૃષિ નિષ્ણાત નેટવર્ક',
-      p4Desc: 'કૃષિ વિજ્ઞાન કેન્દ્રોના નિષ્ણાતો પાસેથી માર્ગદર્શન મેળવો.',
-      p5Badge: 'ભાષા',
-      p5Title: 'ગુજરાતી વૉઇસ સલાહ',
-      p5Desc: 'ગુજરાતીમાં ઉપચાર માર્ગદર્શન અને ઑડિયો સાંભળો.',
-      p6Badge: 'વહીવટ',
-      p6Title: 'અધિકારી કમાન્ડ ડેશબોર્ડ',
-      p6Desc: 'કૃષિ અધિકારીઓ માટે રાજ્ય સ્તરની દેખરેખ સિસ્ટમ.'
-    }
-  },
-
-  ml: {
-    nav: {
-      brand: 'കൃഷിരക്ഷ',
-      tagline: 'AI വിള ആരോഗ്യവും നിരീക്ഷണവും',
-      features: 'സവിശേഷതകൾ',
-      howItWorks: 'എങ്ങനെ പ്രവർത്തിക്കുന്നു',
-      forFarmers: 'കർഷകർക്കായി',
-      dashboard: 'റോൾ ഹബ്',
-      signIn: 'സൈൻ ഇൻ',
-      getStarted: 'സൗജന്യമായി ആരംഭിക്കുക',
-      scanCrop: 'വിള സ്കാൻ ചെയ്യുക',
-      viewDashboard: 'ഡാഷ്‌ബോർഡ് കാണുക',
-      helpline: 'ഹെൽപ്പ് ലൈൻ: 1800-കൃഷി',
-      offlineMode: 'ഓഫ്‌ലൈൻ മോഡ് തയ്യാറാണ്',
-      role: 'സജീവ റോൾ'
-    },
-    hero: {
-      badge: '★ SIH 2026 - പ്രശ്ന ഐഡി 26131',
-      headlineStart: 'വിള രോഗങ്ങൾ കണ്ടെത്തുക',
-      headlineAccent: 'പടരുന്നതിന് മുൻപ്.',
-      subtitle: 'വിള രോഗങ്ങളും കീടബാധകളും നേരത്തെ കണ്ടെത്തുന്നതിനുള്ള AI പ്ലാറ്റ്‌ഫോം — ഇന്ത്യൻ കർഷകർക്കായി നിർമ്മിച്ചത്.',
-      statDiseases: '50+ വിള രോഗങ്ങൾ കണ്ടെത്തുന്നു',
-      statLanguages: 'മലയാളം ഉൾപ്പെടെ 11+ ഭാഷകൾ',
-      statFarms: '340+ പൈലറ്റ് ഫാമുകൾ',
-      liveDemo: 'തത്സമയ വിശകലന എഞ്ചിൻ',
-      detecting: 'ഇല പരിശോധിക്കുന്നു...',
-      sampleCrop: 'തക്കാളി / കുരുമുളക് ഇല · വയനാട്',
-      diagnosis: 'ലേറ്റ് ബ്ലൈറ്റ് രോഗം',
-      confidence: '94% കൃത്യത',
-      scientific: 'ഫൈറ്റോഫ്തോറ - തീവ്രത: മിതമായത്',
-      action: 'ശുപാർശ ചെയ്ത നടപടി: കുമിൾനാശിനി തളിക്കുക.'
-    },
-    metrics: {
-      stat1Val: '72%',
-      stat1Desc: 'നാശനഷ്ടം കണ്ടതിന് ശേഷമാണ് കർഷകർ രോഗം തിരിച്ചറിയുന്നത്',
-      stat2Val: '₹6,000',
-      stat2Desc: 'വൈകിയുള്ള ചികിത്സ മൂലം ഏക്കറിന് ശരാശരി നഷ്ടം',
-      stat3Val: '50+',
-      stat3Desc: '30 സെക്കൻഡിൽ AI വഴി രോഗനിർണയം'
-    },
-    pillars: {
-      title: 'വിള സംരക്ഷണത്തിന് സമഗ്ര പരിഹാരം.',
-      subtitle: 'കർഷകരുടെ ആവശ്യാനുസരണം രൂപകൽപ്പന ചെയ്തത്.',
-      p1Badge: 'പ്രധാനം',
-      p1Title: 'AI ചിത്ര രോഗനിർണയം & YOLO ലൈവ് ക്യാമറ',
-      p1Desc: 'രോഗം ബാധിച്ച ഇലയുടെ ഫോട്ടോ എടുക്കുകയോ ലൈവ് ക്യാമറ ഉപയോഗിക്കുകയോ ചെയ്യുക.',
-      p2Badge: 'പ്രവചനം',
-      p2Title: 'തത്സമയ കാലാവസ്ഥാ മുന്നറിയിപ്പ്',
-      p2Desc: '7 ദിവസങ്ങൾക്ക് മുമ്പ് രോഗസാധ്യത പ്രവചിക്കുന്ന കാലാവസ്ഥാ വിവരങ്ങൾ.',
-      p3Badge: 'നിരീക്ഷണം',
-      p3Title: 'ഹോട്ട്സ്പോട്ട് ഭൂപടങ്ങൾ',
-      p3Desc: 'രോഗവ്യാപനം തടയുന്നതിനുള്ള ലൈവ് മാപ്പുകൾ.',
-      p4Badge: 'വിദഗ്ദ്ധർ',
-      p4Title: 'KVK കാർഷിക വിദഗ്ദ്ധ ശൃംഖല',
-      p4Desc: 'കൃഷി വിജ്ഞാന കേന്ദ്രങ്ങളിൽ നിന്ന് നേരിട്ട് ഉപദേശം നേടുക.',
-      p5Badge: 'ഭാഷ',
-      p5Title: 'മലയാളം വോയ്‌സ് ഉപദേശം',
-      p5Desc: 'മലയാളത്തിൽ ചികിത്സാ മാർഗ്ഗനിർദ്ദേശങ്ങൾ കേൾക്കുക.',
-      p6Badge: 'ഭരണം',
-      p6Title: 'ഉദ്യോഗസ്ഥ കമാൻഡ് ഡാഷ്‌ബോർഡ്',
-      p6Desc: 'കൃഷി ഉദ്യോഗസ്ഥർക്കായി സംസ്ഥാനതല നിരീക്ഷണ സംവിധാനം.'
-    }
-  },
-
-  or: {
-    nav: {
-      brand: 'କୃଷିରକ୍ଷା',
-      tagline: 'AI ଫସଲ ସ୍ୱାସ୍ଥ୍ୟ ଏବଂ ନିରୀକ୍ଷଣ',
-      features: 'ବିଶେଷତା',
-      howItWorks: 'ଏହା କିପରି କାମ କରେ',
-      forFarmers: 'କୃଷକଙ୍କ ପାଇଁ',
-      dashboard: 'ରୋଲ୍ ହବ୍',
-      signIn: 'ସାଇନ୍ ଇନ୍',
-      getStarted: 'ମାଗଣାରେ ଆରମ୍ଭ କରନ୍ତୁ',
-      scanCrop: 'ଫସଲ ସ୍କାନ୍ କରନ୍ତୁ',
-      viewDashboard: 'ଡ୍ୟାସବୋର୍ଡ ଦେଖନ୍ତୁ',
-      helpline: 'ହେଲ୍ପଲାଇନ: 1800-କୃଷି',
-      offlineMode: 'ଅଫଲାଇନ୍ ମୋଡ୍ ଉପଲବ୍ଧ',
-      role: 'ସକ୍ରିୟ ଭୂମିକା'
-    },
-    hero: {
-      badge: '★ SIH 2026 - ସମସ୍ୟା ଆଇଡି 26131',
-      headlineStart: 'ଫସଲ ରୋଗ ଚିହ୍ନଟ କରନ୍ତୁ',
-      headlineAccent: 'ବ୍ୟାପିବା ପୂର୍ବରୁ।',
-      subtitle: 'ଫସଲ ରୋଗ ଏବଂ କୀଟନାଶକ ଆକ୍ରମଣର ଶୀଘ୍ର ଚିହ୍ନଟ ପାଇଁ AI-ଚାଳିତ ପ୍ଲାଟଫର୍ମ — ଭାରତୀୟ କୃଷକମାନଙ୍କ ପାଇଁ ନିର୍ମିତ।',
-      statDiseases: '50+ ଫସଲ ରୋଗ ଚିହ୍ନଟ',
-      statLanguages: 'ଓଡ଼ିଆ ସହିତ 11+ କୃଷି ଭାଷା',
-      statFarms: '340+ ପାଇଲଟ୍ ଫାର୍ମ',
-      liveDemo: 'ଲାଇଭ୍ ବିଶ୍ଳେଷଣ ଇଞ୍ଜିନ୍',
-      detecting: 'ପତ୍ର ବିଶ୍ଳେଷଣ ଚାଲିଛି...',
-      sampleCrop: 'ଟମାଟୋ / ଧାନ ପତ୍ର · ସମ୍ବଲପୁର',
-      diagnosis: 'ଲେଟ୍ ବ୍ଲାଇଟ୍ ରୋଗ',
-      confidence: '94% ସଠିକତା',
-      scientific: 'ଫାଇଟୋଫଥୋରା - ତୀବ୍ରତା: ମଧ୍ୟମ',
-      action: 'ପରାମର୍ଶିତ ପଦକ୍ଷେପ: ଉପଯୁକ୍ତ କବକନାଶକ ସ୍ପ୍ରେ କରନ୍ତୁ।'
-    },
-    metrics: {
-      stat1Val: '72%',
-      stat1Desc: 'କ୍ଷତି ଦେଖାଯିବା ପରେ ହିଁ କୃଷକମାନେ ରୋଗ ଚିହ୍ନନ୍ତି',
-      stat2Val: '₹6,000',
-      stat2Desc: 'ବିଳମ୍ବିତ ଚିକିତ୍ସା ଯୋଗୁଁ ଏକର ପିଛା ହାରାହାରି କ୍ଷତି',
-      stat3Val: '50+',
-      stat3Desc: 'AI ଦ୍ୱାରା 30 ସେକେଣ୍ଡରେ ରୋଗ ଚିହ୍ନଟ'
-    },
-    pillars: {
-      title: 'ଫସଲ ସୁରକ୍ଷା ପାଇଁ ସମ୍ପୂର୍ଣ୍ଣ ସମାଧାନ।',
-      subtitle: 'ଭାରତୀୟ କୃଷକଙ୍କ ଆବଶ୍ୟକତା ଅନୁଯାୟୀ ପ୍ରସ୍ତୁତ।',
-      p1Badge: 'ମୁଖ୍ୟ',
-      p1Title: 'AI ଇମେଜ୍ ନିଦାନ ଏବଂ YOLO ଲାଇଭ୍ କ୍ୟାମେରା',
-      p1Desc: 'ରୋଗାକ୍ରାନ୍ତ ପତ୍ରର ଫଟୋ ନିଅନ୍ତୁ କିମ୍ବା ଲାଇଭ୍ କ୍ୟାମେରା ବ୍ୟବହାର କରନ୍ତୁ।',
-      p2Badge: 'ପୂର୍ବାନୁମାନ',
-      p2Title: 'ଲାଇଭ୍ ପାଣିପାଗ ବିପଦ ପୂର୍ବାନୁମାନ',
-      p2Desc: '୭ ଦିନ ପୂର୍ବରୁ ରୋଗ ବ୍ୟାପିବାର ବିପଦ ଆକଳନ।',
-      p3Badge: 'ନିରୀକ୍ଷଣ',
-      p3Title: 'ହଟସ୍ପଟ୍ ମାନଚିତ୍ର',
-      p3Desc: 'ରୋଗ ନିୟନ୍ତ୍ରଣ ପାଇଁ ଲାଇଭ୍ ହିଟମ୍ୟାପ୍।',
-      p4Badge: 'ବିଶେଷଜ୍ଞ',
-      p4Title: 'KVK କୃଷି ବିଶେଷଜ୍ଞ ନେଟୱାର୍କ',
-      p4Desc: 'କୃଷି ବିଜ୍ଞାନ କେନ୍ଦ୍ରରୁ ସିଧାସଳଖ ପରାମର୍ଶ ନିଅନ୍ତୁ।',
-      p5Badge: 'ଭାଷା',
-      p5Title: 'ଓଡ଼ିଆ ଭଏସ୍ ପରାମର୍ଶ',
-      p5Desc: 'ଓଡ଼ିଆରେ ଚିକିତ୍ସା ନିର୍ଦ୍ଦେଶାବଳୀ ଶୁଣନ୍ତୁ।',
-      p6Badge: 'ପ୍ରଶାସନ',
-      p6Title: 'ଅଧିକାରୀ କମାଣ୍ଡ ଡ୍ୟାସବୋର୍ଡ',
-      p6Desc: 'କୃଷି ଅଧିକାରୀମାନଙ୍କ ପାଇଁ ରାଜ୍ୟ ସ୍ତରୀୟ ନିରୀକ୍ଷଣ।'
+    cta: {
+      badge: 'वेब आणि मोबाईलवर उपलब्ध · शेतकऱ्यांसाठी मोफत',
+      title: 'आपल्या पिकांचे रक्षण करण्यास तयार आहात?',
+      subtitle: 'हजारो शेतकऱ्यांसोबत सामील व्हा जे कृषिरक्षाच्या मदतीने वेळेवर रोग ओळखून पिके वाचवत आहेत. २जी फोनवर एसएमएसद्वारेही कार्यक्षम.',
+      btnDownload: 'ॲप डाउनलोड करा — मोफत',
+      btnOfficer: 'अधिकारी पोर्टल',
+      note: 'कोणत्याही शुल्काची आवश्यकता नाही. महाराष्ट्र शासन उपक्रम.'
     }
   }
 };
+
+// Safe getter with fallback to English so NO undefined property can ever crash React
+export const getTranslation = (lang) => {
+  const base = rawTranslations.en;
+  const target = rawTranslations[lang] || rawTranslations.en;
+  return {
+    ...base,
+    ...target,
+    nav: { ...base.nav, ...(target.nav || {}) },
+    hero: { ...base.hero, ...(target.hero || {}) },
+    metrics: { ...base.metrics, ...(target.metrics || {}) },
+    pillars: { ...base.pillars, ...(target.pillars || {}) },
+    process: { ...base.process, ...(target.process || {}) },
+    roles: { ...base.roles, ...(target.roles || {}) },
+    pilot: { ...base.pilot, ...(target.pilot || {}) },
+    cta: { ...base.cta, ...(target.cta || {}) }
+  };
+};
+
+export const translations = new Proxy(rawTranslations, {
+  get(target, prop) {
+    if (prop in target) {
+      return getTranslation(prop);
+    }
+    return getTranslation('en');
+  }
+});
