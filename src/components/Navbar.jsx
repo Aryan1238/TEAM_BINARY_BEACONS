@@ -41,6 +41,20 @@ export const Navbar = ({
     { id: 'dashboard', label: 'Role Hub', icon: LayoutDashboard },
   ];
 
+  const languageOptions = [
+    { code: 'en', label: 'EN (English)' },
+    { code: 'hi', label: 'हिंदी (Hindi)' },
+    { code: 'mr', label: 'मराठी (Marathi)' },
+    { code: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)' },
+    { code: 'kn', label: 'ಕನ್ನಡ (Kannada)' },
+    { code: 'te', label: 'తెలుగు (Telugu)' },
+    { code: 'ta', label: 'தமிழ் (Tamil)' },
+    { code: 'bn', label: 'বাংলা (Bengali)' },
+    { code: 'gu', label: 'ગુજરાતી (Gujarati)' },
+    { code: 'ml', label: 'മലയാളം (Malayalam)' },
+    { code: 'or', label: 'ଓଡ଼ିଆ (Odia)' }
+  ];
+
   return (
     <header className="sticky top-0 z-50 bg-[#0F382A] border-b border-emerald-800/90 text-white shadow-xl">
       {/* Top SIH Micro-Bar */}
@@ -48,7 +62,7 @@ export const Navbar = ({
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-2 font-medium">
             <span className="inline-flex items-center px-2 py-0.2 rounded text-[10px] font-extrabold bg-amber-400 text-emerald-950 shadow-sm">
-              SIH 2024
+              SIH 2026
             </span>
             <span className="truncate text-emerald-200 text-[11px]">
               Problem ID 26131 · Govt of Maharashtra State Innovation Society
@@ -163,17 +177,19 @@ export const Navbar = ({
               </button>
             </div>
 
-            {/* Language Selector */}
+            {/* Language Selector (All 11 Indian Agricultural Languages) */}
             <div className="flex items-center bg-[#071F17] rounded-xl border border-emerald-800 px-2 py-1 text-xs shrink-0">
-              <Globe className="w-3.5 h-3.5 text-emerald-400 mr-1" />
+              <Globe className="w-3.5 h-3.5 text-emerald-400 mr-1 shrink-0" />
               <select
                 value={currentLang}
                 onChange={(e) => onLangChange(e.target.value)}
-                className="bg-transparent text-emerald-200 text-xs font-bold focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-emerald-200 text-xs font-bold focus:outline-none cursor-pointer pr-1 max-w-[110px] truncate"
               >
-                <option value="en" className="bg-[#0F382A] text-white">EN</option>
-                <option value="mr" className="bg-[#0F382A] text-white">मराठी</option>
-                <option value="hi" className="bg-[#0F382A] text-white">हिंदी</option>
+                {languageOptions.map((lang) => (
+                  <option key={lang.code} value={lang.code} className="bg-[#0F382A] text-white">
+                    {lang.label}
+                  </option>
+                ))}
               </select>
             </div>
 

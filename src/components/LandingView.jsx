@@ -876,7 +876,7 @@ export const LandingView = ({ currentLang, onNavigate, onRoleChange }) => {
               <span className="text-base font-bold text-white">KrushiRaksha (कृषीरक्षा)</span>
             </div>
             <p className="text-xs text-emerald-200/70 max-w-md leading-relaxed">
-              An initiative under the Maharashtra State Innovation Society, Department of Skills, Employment, Entrepreneurship & Innovation. Built for Smart India Hackathon 2024 · Problem Statement ID: 26131.
+              An initiative under the Maharashtra State Innovation Society, Department of Skills, Employment, Entrepreneurship & Innovation. Built for Smart India Hackathon 2026 · Problem Statement ID: 26131.
             </p>
             <p className="text-[11px] text-emerald-400 font-mono">
               Ground-Truth Datasets: PlantVillage (Kaggle), IP102 Benchmark, CIBRC/ICAR Schedules, Maharashtra Open GIS.
@@ -907,8 +907,8 @@ export const LandingView = ({ currentLang, onNavigate, onRoleChange }) => {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 mt-8 border-t border-emerald-950/80 flex flex-col sm:flex-row items-center justify-between text-[11px] text-emerald-300/60">
-          <p>© 2024–2026 KrushiRaksha. Government of Maharashtra Initiative. All rights reserved.</p>
-          <p className="mt-2 sm:mt-0 font-mono">SIH 2024 · Problem ID 26131 · Agriculture, FoodTech & Rural Development</p>
+          <p>© 2026 KrushiRaksha. Government of Maharashtra Initiative. All rights reserved.</p>
+          <p className="mt-2 sm:mt-0 font-mono">SIH 2026 · Problem ID 26131 · Agriculture, FoodTech & Rural Development</p>
         </div>
       </footer>
 

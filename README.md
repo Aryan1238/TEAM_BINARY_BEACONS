@@ -2,7 +2,7 @@
 
 # 🌾 KrushiRaksha (कृषीरक्षा)
 ### **AI-Powered Early Crop Disease & Pest Management Platform**
-#### **Smart India Hackathon (SIH 2024) — Problem Statement ID 26131**
+#### **Smart India Hackathon (SIH 2026) — Problem Statement ID 26131**
 *Submitted to: Government of Maharashtra — Department of Skills, Employment, Entrepreneurship & Innovation & Maharashtra State Innovation Society*
 
 ---
@@ -18,7 +18,7 @@
 
 [![GitHub Pages](https://img.shields.io/badge/🚀_GitHub_Pages-Live_App-22C55E?style=for-the-badge&logo=github&logoColor=white)](https://aryan1238.github.io/TEAM_BINARY_BEACONS/)
 [![Vercel Live](https://img.shields.io/badge/🌐_Vercel_Live-krushiraksha.vercel.app-0F382A?style=for-the-badge&logo=vercel&logoColor=white)](https://krushiraksha.vercel.app)
-[![SIH Problem ID](https://img.shields.io/badge/SIH_2024-Problem_ID_26131-E6A122?style=for-the-badge&logo=target&logoColor=black)](https://krushiraksha.vercel.app)
+[![SIH Problem ID](https://img.shields.io/badge/SIH_2026-Problem_ID_26131-E6A122?style=for-the-badge&logo=target&logoColor=black)](https://krushiraksha.vercel.app)
 [![React 19](https://img.shields.io/badge/React_19-Vite_8-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![YOLOv8 Real-Time](https://img.shields.io/badge/YOLOv8--Agri-ONNX_WebGL-FF6F00?style=for-the-badge&logo=yolo&logoColor=white)](https://krushiraksha.vercel.app)
 [![CIBRC & ICAR Compliant](https://img.shields.io/badge/Regulatory-CIBRC_%26_ICAR-10B981?style=for-the-badge&logo=leaf&logoColor=white)](https://krushiraksha.vercel.app)
@@ -145,7 +145,7 @@ npm run preview
 
 ## 👥 Team & Problem Statement Attribution
 
-- **Hackathon**: Smart India Hackathon (SIH 2024)
+- **Hackathon**: Smart India Hackathon (SIH 2026)
 - **Problem Statement ID**: 26131
 - **Problem Title**: Early Detection and Management of Crop Diseases and Pest Infestations
 - **Organization**: Department of Skills, Employment, Entrepreneurship & Innovation & Maharashtra State Innovation Society, Government of Maharashtra
