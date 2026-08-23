@@ -18,7 +18,7 @@ import {
   Radio,
   Sparkles
 } from 'lucide-react';
-import { translations } from '../data/translations';
+import { getUiTranslation } from '../data/uiTranslations';
 
 export const Navbar = ({ 
   currentLang, 
@@ -30,15 +30,15 @@ export const Navbar = ({
   onOpenSmsSim 
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const t = translations[currentLang] || translations.en;
+  const tNav = getUiTranslation(currentLang).nav;
 
   const navItems = [
-    { id: 'landing', label: 'Home', icon: Sprout },
-    { id: 'diagnosis', label: 'AI Diagnosis & YOLO', icon: Camera, highlight: true },
-    { id: 'weather', label: 'Weather Risk', icon: CloudRain },
-    { id: 'hotspots', label: 'Hotspot GIS', icon: MapPin },
-    { id: 'ipm', label: 'CIBRC Dosage', icon: Calculator },
-    { id: 'dashboard', label: 'Role Hub', icon: LayoutDashboard },
+    { id: 'landing', label: tNav.home || 'Home', icon: Sprout },
+    { id: 'diagnosis', label: tNav.diagnosis || 'AI Diagnosis & YOLO', icon: Camera, highlight: true },
+    { id: 'weather', label: tNav.weather || 'Weather Risk', icon: CloudRain },
+    { id: 'hotspots', label: tNav.hotspots || 'Hotspot GIS', icon: MapPin },
+    { id: 'ipm', label: tNav.ipm || 'CIBRC Dosage', icon: Calculator },
+    { id: 'dashboard', label: tNav.dashboard || 'Role Hub', icon: LayoutDashboard },
   ];
 
   const languageOptions = [
@@ -62,10 +62,10 @@ export const Navbar = ({
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-2 font-medium">
             <span className="inline-flex items-center px-2 py-0.2 rounded text-[10px] font-extrabold bg-amber-400 text-emerald-950 shadow-sm">
-              SIH 2026
+              {tNav.sihBadge || 'SIH 2026'}
             </span>
             <span className="truncate text-emerald-200 text-[11px]">
-              Problem ID 26131 · Govt of Maharashtra State Innovation Society
+              {tNav.sihSubtitle || 'Problem ID 26131 · Govt of Maharashtra State Innovation Society'}
             </span>
           </div>
 
@@ -75,7 +75,7 @@ export const Navbar = ({
               className="hover:text-amber-300 transition-colors flex items-center space-x-1.5 cursor-pointer bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800"
             >
               <Smartphone className="w-3 h-3 text-amber-400" />
-              <span>Offline 2G SMS / IVR</span>
+              <span>{tNav.offlineSms || 'Offline 2G SMS / IVR'}</span>
             </button>
             <span className="text-emerald-700 hidden sm:inline">|</span>
             <div className="hidden sm:flex items-center space-x-1 text-emerald-200 font-mono">
@@ -103,19 +103,19 @@ export const Navbar = ({
             <div>
               <div className="flex items-center space-x-1.5">
                 <span className="text-base sm:text-lg font-extrabold tracking-tight text-white">
-                  KrushiRaksha
+                  {tNav.brand || 'KrushiRaksha'}
                 </span>
                 <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-400 text-emerald-950">
                   AI
                 </span>
               </div>
               <p className="text-[10px] text-emerald-300 -mt-0.5 font-medium">
-                Crop Health & Outbreak GIS
+                {tNav.tagline || 'Crop Health & Outbreak GIS'}
               </p>
             </div>
           </div>
 
-          {/* CENTER: Navigation Links (Always Visible on Desktop & Laptop at all Zoom Levels) */}
+          {/* CENTER: Navigation Links (Always Visible on Desktop & Laptop) */}
           <nav className="hidden md:flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center py-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -153,7 +153,7 @@ export const Navbar = ({
                     : 'text-emerald-300/80 hover:text-white'
                 }`}
               >
-                🌾 Farmer
+                {tNav.farmer || '🌾 Farmer'}
               </button>
               <button
                 onClick={() => onRoleChange('officer')}
@@ -163,7 +163,7 @@ export const Navbar = ({
                     : 'text-emerald-300/80 hover:text-white'
                 }`}
               >
-                🧑‍🌾 Officer
+                {tNav.officer || '🧑‍🌾 Officer'}
               </button>
               <button
                 onClick={() => onRoleChange('govt')}
@@ -173,7 +173,7 @@ export const Navbar = ({
                     : 'text-emerald-300/80 hover:text-white'
                 }`}
               >
-                🏛️ Govt
+                {tNav.govt || '🏛️ Govt'}
               </button>
             </div>
 
@@ -199,7 +199,7 @@ export const Navbar = ({
               className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-500 text-emerald-950 font-extrabold px-3.5 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 transform hover:scale-102 active:scale-98"
             >
               <Camera className="w-4 h-4 text-emerald-950" />
-              <span className="whitespace-nowrap">YOLO Live Vision</span>
+              <span className="whitespace-nowrap">{tNav.yoloButton || 'YOLO Live Vision'}</span>
             </button>
 
             {/* Mobile Hamburger Toggle */}
@@ -213,7 +213,7 @@ export const Navbar = ({
 
         </div>
 
-        {/* Mobile Navigation Dropdown (Below md) */}
+        {/* Mobile Navigation Dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden pt-3 pb-3 border-t border-emerald-800 space-y-2 mt-2">
             <div className="grid grid-cols-2 gap-1.5 pb-2">
@@ -238,43 +238,6 @@ export const Navbar = ({
                   </button>
                 );
               })}
-            </div>
-
-            {/* Mobile Role Switcher */}
-            <div className="flex bg-[#071F17] p-1 rounded-xl border border-emerald-800 justify-between">
-              <button
-                onClick={() => {
-                  onRoleChange('farmer');
-                  setMobileMenuOpen(false);
-                }}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-bold text-center ${
-                  currentRole === 'farmer' ? 'bg-emerald-700 text-white' : 'text-emerald-300'
-                }`}
-              >
-                🌾 Farmer
-              </button>
-              <button
-                onClick={() => {
-                  onRoleChange('officer');
-                  setMobileMenuOpen(false);
-                }}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-bold text-center ${
-                  currentRole === 'officer' ? 'bg-emerald-700 text-white' : 'text-emerald-300'
-                }`}
-              >
-                🧑‍🌾 Officer
-              </button>
-              <button
-                onClick={() => {
-                  onRoleChange('govt');
-                  setMobileMenuOpen(false);
-                }}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-bold text-center ${
-                  currentRole === 'govt' ? 'bg-emerald-700 text-white' : 'text-emerald-300'
-                }`}
-              >
-                🏛️ Govt
-              </button>
             </div>
           </div>
         )}

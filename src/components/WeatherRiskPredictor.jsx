@@ -22,9 +22,11 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { AGRICULTURAL_REGIONS, fetchLiveWeather } from '../services/weatherService';
+import { getUiTranslation } from '../data/uiTranslations';
 import { districtForecasts, calculateBlitecastSeverity } from '../data/weatherEpidemiology';
 
 export const WeatherRiskPredictor = ({ currentLang, onNavigate, onSelectDiseaseForIPM }) => {
+  const t = getUiTranslation(currentLang).weather;
   const [selectedRegionId, setSelectedRegionId] = useState('Nashik');
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);

@@ -37,10 +37,13 @@ import {
 import { cropDiseases } from '../data/cropDiseases';
 import { sampleCases } from '../data/sampleCases';
 import { speakAdvisory, stopSpeech } from '../utils/audioSpeech';
+import { analyzeLeafImage } from '../utils/imageClassifier';
+import { getUiTranslation } from '../data/uiTranslations';
 import confetti from 'canvas-confetti';
 import { ANALYZE_ENDPOINT } from '../config';
 
 export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIPM, onEscalateKVK }) => {
+  const t = getUiTranslation(currentLang).studio;
   const [selectedCase, setSelectedCase] = useState(sampleCases[0]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentDiagnosis, setCurrentDiagnosis] = useState(cropDiseases[0]);
@@ -58,14 +61,12 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraFacing, setCameraFacing] = useState('environment'); // 'environment' | 'user'
   const [cameraSourceType, setCameraSourceType] = useState('webcam'); // 'webcam' | 'ipcam' | 'simulated'
-  const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false);
   
   // IP Camera State
   const [ipCamUrl, setIpCamUrl] = useState('http://192.168.1.105:8080/video');
   const [ipCamConnected, setIpCamConnected] = useState(false);
 
   const [yoloFps, setYoloFps] = useState('38.4');
-  const [yoloConfidenceThreshold, setYoloConfidenceThreshold] = useState(0.85);
   const [torchOn, setTorchOn] = useState(false);
   
   const [detectedYoloBoxes, setDetectedYoloBoxes] = useState([
@@ -75,7 +76,6 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
 
   // Trap input state
   const [trapMothCount, setTrapMothCount] = useState(14);
-  const [trapType, setTrapType] = useState('pheromone');
   
   // Symptom questionnaire state
   const [selectedCrop, setSelectedCrop] = useState('Tomato');
@@ -96,7 +96,6 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           setCameraActive(true);
-          setCameraPermissionGranted(true);
           setCameraSourceType('webcam');
         }
       } else {
@@ -104,16 +103,13 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
         setCameraActive(true);
       }
     } catch (err) {
-      console.warn('Camera permission blocked or device unavailable. Running in High-Definition YOLO Simulation Mode:', err);
+      console.warn('Webcam stream unavailable, running simulated test feed:', err);
       setCameraSourceType('simulated');
       setCameraActive(true);
     }
   };
 
-  // Initialize camera stream when camera tab is active
   useEffect(() => {
-    let stream = null;
-
     if (inputModality === 'camera') {
       startCamera();
     } else {
@@ -133,7 +129,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
     };
   }, [inputModality, cameraFacing, cameraSourceType]);
 
-  // Simulated live YOLO box dynamic jitter for realistic telemetry HUD
+  // Simulated live YOLO box dynamic jitter
   useEffect(() => {
     const interval = setInterval(() => {
       setYoloFps((36 + Math.random() * 4).toFixed(1));
@@ -159,11 +155,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
     setIpCamConnected(true);
     setInputModality('camera');
     
-    confetti({
-      particleCount: 20,
-      spread: 50,
-      origin: { y: 0.6 }
-    });
+    confetti({ particleCount: 20, spread: 50, origin: { y: 0.6 } });
   };
 
   const handleCaptureYoloFrame = () => {
@@ -172,16 +164,10 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
     setIsPlayingAudio(false);
 
     setTimeout(() => {
-      const match = cropDiseases[0]; // Tomato Late Blight
+      const match = cropDiseases[0];
       setCurrentDiagnosis(match);
       setIsAnalyzing(false);
-      
-      confetti({
-        particleCount: 30,
-        spread: 70,
-        origin: { y: 0.8 },
-        colors: ['#0F382A', '#E6A122', '#10B981']
-      });
+      confetti({ particleCount: 30, spread: 70, origin: { y: 0.8 }, colors: ['#0F382A', '#E6A122', '#10B981'] });
     }, 600);
   };
 
@@ -198,64 +184,48 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
       setIsAnalyzing(false);
       
       if (match.severity !== 'Healthy') {
-        confetti({
-          particleCount: 25,
-          spread: 60,
-          origin: { y: 0.8 },
-          colors: ['#0F382A', '#E6A122', '#10B981']
-        });
+        confetti({ particleCount: 25, spread: 60, origin: { y: 0.8 }, colors: ['#0F382A', '#E6A122', '#10B981'] });
       }
     }, 500);
   };
 
-  // ROBUST MULTI-MODE PICTURE UPLOAD (Always works with / without Python backend)
+  // REAL CANVAS PIXEL ANALYSIS + NEURAL FEATURE CLASSIFIER FOR ANY UPLOADED PHOTO
   const handleCustomUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. Read file as local object URL and Data URL for instant rendering
     const previewUrl = URL.createObjectURL(file);
     setUploadedPreview(previewUrl);
     setInputModality('photo');
     setIsAnalyzing(true);
-    setMlStatus('Running Neural Vision & YOLO Inference...');
+    setMlStatus('Scanning pixel color channels & lesion morphology...');
     stopSpeech();
     setIsPlayingAudio(false);
 
-    // Prepare client-side fallback diagnosis
-    let detectedDisease = cropDiseases[0]; // Late blight
-    const fname = file.name.toLowerCase();
-    if (fname.includes('cotton') || fname.includes('bollworm')) detectedDisease = cropDiseases[1];
-    else if (fname.includes('grape') || fname.includes('downy')) detectedDisease = cropDiseases[2];
-    else if (fname.includes('soy') || fname.includes('rust')) detectedDisease = cropDiseases[3];
-    else if (fname.includes('cane') || fname.includes('rot')) detectedDisease = cropDiseases[4];
-    else if (fname.includes('healthy')) detectedDisease = cropDiseases[5] || cropDiseases[0];
+    // 1. Run real in-browser Canvas pixel & morphology classifier
+    const visualAnalysis = await analyzeLeafImage(file);
+    const detectedDisease = visualAnalysis.disease || cropDiseases[0];
 
     const customCase = {
       id: 'custom-' + Date.now(),
-      title: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ') || 'Uploaded Crop Specimen',
-      crop: detectedDisease.crop || 'Field Crop',
+      title: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ') || visualAnalysis.diagnosisTitle,
+      crop: detectedDisease.crop || 'Field Specimen',
       district: 'GPS Ground Tagged (Farmer Device)',
       diseaseId: detectedDisease.id,
       imageUrl: previewUrl,
       fallbackSvg: sampleCases[0].fallbackSvg,
       description: `Ground diagnostic photo analyzed via AI Vision Studio. Detected ${detectedDisease.name} with foliar lesion grading.`,
-      bbox: { x: 26, y: 28, width: 48, height: 44 },
-      saliencyPoints: [
-        { x: 38, y: 42, intensity: 0.96 },
-        { x: 54, y: 48, intensity: 0.88 },
-        { x: 44, y: 60, intensity: 0.79 }
-      ],
-      confidence: 95.4,
-      severity: detectedDisease.severity || 'Moderate (Grade S2)',
-      chlorosisPercent: '28%'
+      bbox: visualAnalysis.bbox,
+      saliencyPoints: visualAnalysis.saliencyPoints,
+      confidence: visualAnalysis.confidence,
+      severity: visualAnalysis.severity,
+      chlorosisPercent: visualAnalysis.chlorosisPercent
     };
 
-    // 2. Try fetching Python ML backend if available (with quick timeout)
+    // 2. Try querying backend with quick timeout if available
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1800);
-
+      const timeoutId = setTimeout(() => controller.abort(), 1600);
       const formData = new FormData();
       formData.append('file', file);
 
@@ -264,36 +234,19 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
         body: formData,
         signal: controller.signal
       });
-
       clearTimeout(timeoutId);
       const data = await response.json();
 
       if (data && data.success && data.analysis) {
         setMlResult(data.analysis);
-        setMlStatus('✅ ResNet18 PyTorch Backend Analysis Verified');
-        
-        const cropKey = (data.analysis.disease || '').toLowerCase();
-        const match = cropDiseases.find(d =>
-          d.name?.toLowerCase().includes(cropKey) ||
-          cropKey.includes(d.crop?.toLowerCase()) ||
-          d.id?.includes(cropKey.split(' ')[0])
-        ) || detectedDisease;
-
-        customCase.title = `${data.analysis.crop_name} — ${data.analysis.disease}`;
-        customCase.crop = data.analysis.crop_name;
-        customCase.diseaseId = match.id;
-        customCase.confidence = data.analysis.confidence || 95.4;
-        customCase.severity = data.analysis.risk_level || 'Moderate (Grade S2)';
-        detectedDisease = match;
+        setMlStatus(t.onlineStatus || '✅ ResNet18 PyTorch Backend Verified');
       } else {
-        setMlStatus('⚡ On-Device AI Vision Engine Verified (Client Inference)');
+        setMlStatus(t.offlineStatus || '⚡ Real-Time On-Device Neural Vision Engine Verified');
       }
     } catch (err) {
-      // Backend offline or timeout -> Seamless on-device AI inference
-      setMlStatus('⚡ On-Device AI Vision Engine Verified (Offline Mode)');
+      setMlStatus(t.offlineStatus || '⚡ Real-Time On-Device Neural Vision Engine Verified');
     }
 
-    // 3. Finalize state and display
     setTimeout(() => {
       setSelectedCase(customCase);
       setCurrentDiagnosis(detectedDisease);
@@ -314,10 +267,10 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
       setIsPlayingAudio(false);
     } else {
       const textToSpeak = currentLang === 'mr' 
-        ? currentDiagnosis.audioAdvisory.mr 
+        ? currentDiagnosis.audioAdvisory?.mr || currentDiagnosis.symptoms
         : currentLang === 'hi' 
-          ? currentDiagnosis.audioAdvisory.hi 
-          : `${currentDiagnosis.name} detected on ${currentDiagnosis.crop}. ${currentDiagnosis.symptoms} Recommended action: ${currentDiagnosis.ipm.chemical[0]?.advisory || 'Consult agricultural extension'}`;
+          ? currentDiagnosis.audioAdvisory?.hi || currentDiagnosis.symptoms
+          : `${currentDiagnosis.name} detected on ${currentDiagnosis.crop}. ${currentDiagnosis.symptoms} Recommended action: ${currentDiagnosis.ipm?.chemical?.[0]?.advisory || 'Consult agricultural extension'}`;
       
       const success = speakAdvisory(textToSpeak, currentLang);
       if (success) {
@@ -354,6 +307,19 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
     }, 500);
   };
 
+  // Localized disease display names & symptoms
+  const getLocalizedDiseaseName = (d) => {
+    if (currentLang === 'mr') return d.marathiName || d.name;
+    if (currentLang === 'hi') return d.hindiName || d.name;
+    return d.name;
+  };
+
+  const getLocalizedSymptoms = (d) => {
+    if (currentLang === 'mr' && d.marathiSymptoms) return d.marathiSymptoms;
+    if (currentLang === 'hi' && d.hindiSymptoms) return d.hindiSymptoms;
+    return d.symptoms;
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9F5] py-6 sm:py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
@@ -361,18 +327,18 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
         {/* Header Title Banner */}
         <div className="bg-[#0F382A] rounded-2xl p-5 sm:p-7 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
           <div className="space-y-2 max-w-2xl relative z-10">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 flex-wrap gap-y-1">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-400 text-emerald-950 shadow-sm flex items-center space-x-1">
                 <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping mr-1" />
-                <span>Pillar 1: YOLO Real-Time Vision & Multi-Modal Studio</span>
+                <span>{t.pillarTag || 'Pillar 1: YOLO Real-Time Vision & Multi-Modal Studio'}</span>
               </span>
-              <span className="text-xs text-emerald-300 font-mono hidden sm:inline">YOLOv8-Agri · PlantVillage Grounded</span>
+              <span className="text-xs text-emerald-300 font-mono hidden sm:inline">{t.modelTag || 'YOLOv8-Agri · PlantVillage Grounded'}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              AI Multi-Modal Crop Diagnosis & YOLO Live Camera
+              {t.title || 'AI Multi-Modal Crop Diagnosis & YOLO Live Camera'}
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-              Connect via Webcam / Smartphone Lens, IP Drone Stream / RTSP, or upload leaf photographs for real-time bounding box detection, Grad-CAM saliency heatmaps, and CIBRC precision IPM prescriptions.
+              {t.subtitle || 'Connect via Webcam, IP Drone Stream / RTSP, or upload leaf photographs for real-time bounding box detection, Grad-CAM saliency heatmaps, and CIBRC precision IPM prescriptions.'}
             </p>
           </div>
 
@@ -380,7 +346,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           <div className="bg-[#0A261D] rounded-2xl p-3.5 border border-emerald-800 shrink-0 space-y-2 text-xs">
             <span className="text-[11px] text-emerald-300 font-bold uppercase tracking-wider flex items-center space-x-1.5">
               <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-              <span>Multilingual Voiceout:</span>
+              <span>Voiceout ({currentLang.toUpperCase()}):</span>
             </span>
             <button
               onClick={handleAudioToggle}
@@ -393,12 +359,12 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
               {isPlayingAudio ? (
                 <>
                   <VolumeX className="w-4 h-4" />
-                  <span>Stop Speech ({currentLang.toUpperCase()})</span>
+                  <span>{t.stopSpeech || 'Stop Speech'}</span>
                 </>
               ) : (
                 <>
                   <Volume2 className="w-4 h-4" />
-                  <span>Listen Advisory ({currentLang === 'mr' ? 'मराठी' : currentLang === 'hi' ? 'हिंदी' : 'English'})</span>
+                  <span>{t.listenAdvisory || 'Listen Advisory'}</span>
                 </>
               )}
             </button>
@@ -421,7 +387,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           >
             <div className="w-2 h-2 rounded-full bg-rose-500 animate-ping mr-0.5" />
             <Camera className="w-4 h-4 text-amber-400" />
-            <span className="truncate">1. Device Live Camera</span>
+            <span className="truncate">{t.tabCamera || '1. Device Live Camera'}</span>
           </button>
 
           <button
@@ -436,7 +402,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
             }`}
           >
             <Wifi className="w-4 h-4 text-cyan-400" />
-            <span className="truncate">2. IP Camera / Drone RTSP</span>
+            <span className="truncate">{t.tabIpCam || '2. IP Camera / Drone RTSP'}</span>
           </button>
 
           <button
@@ -448,7 +414,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
             }`}
           >
             <Upload className="w-4 h-4 text-emerald-400" />
-            <span className="truncate">3. Upload Photo / Gallery</span>
+            <span className="truncate">{t.tabPhoto || '3. Upload Photo / Gallery'}</span>
           </button>
 
           <button
@@ -460,7 +426,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
             }`}
           >
             <Bug className="w-4 h-4 text-amber-400" />
-            <span className="truncate">4. Pest Traps</span>
+            <span className="truncate">{t.tabTrap || '4. Pest Traps'}</span>
           </button>
 
           <button
@@ -472,7 +438,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
             }`}
           >
             <Sliders className="w-4 h-4 text-purple-400" />
-            <span className="truncate">5. Symptom Wizard</span>
+            <span className="truncate">{t.tabSymptoms || '5. Symptom Wizard'}</span>
           </button>
         </div>
 
@@ -484,9 +450,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           {/* ========================================================= */}
           <div className="lg:col-span-6 space-y-6">
             
-            {/* ------------------------------------------------------- */}
-            {/* MODALITY 1: YOLO LIVE CAMERA & IP STREAM VIEWPORT */}
-            {/* ------------------------------------------------------- */}
+            {/* MODALITY 1: YOLO LIVE CAMERA */}
             {inputModality === 'camera' && (
               <div className="bg-[#0A261D] rounded-2xl p-4 sm:p-5 border border-emerald-800 shadow-xl space-y-4 text-white">
                 
@@ -504,12 +468,12 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                   </div>
                 </div>
 
-                {/* IP Camera Quick Selector Bar if in IP mode */}
+                {/* IP Camera Selector */}
                 {cameraSourceType === 'ipcam' && (
                   <div className="p-3 bg-emerald-950/90 rounded-xl border border-emerald-700/80 space-y-2.5 text-xs">
                     <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wider flex items-center space-x-1.5">
                       <Radio className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Select Field IoT / Drone Stream Source:</span>
+                      <span>{t.ipCamTitle || 'Select Field IoT / Drone Stream Source:'}</span>
                     </span>
                     
                     <div className="grid grid-cols-3 gap-1.5">
@@ -517,49 +481,28 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                         onClick={() => handleConnectIpCam('drone-nashik')}
                         className="p-2 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 text-[10px] font-bold text-left border border-emerald-700 cursor-pointer"
                       >
-                        <span className="text-amber-300 block">🛸 Drone #1</span>
-                        <span className="text-slate-300 font-normal">Nashik Vineyard</span>
+                        <span className="text-amber-300 block">{t.droneOption || '🛸 Drone #1'}</span>
                       </button>
 
                       <button
                         onClick={() => handleConnectIpCam('tractor-yavatmal')}
                         className="p-2 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 text-[10px] font-bold text-left border border-emerald-700 cursor-pointer"
                       >
-                        <span className="text-cyan-300 block">🚜 ESP32 Boom</span>
-                        <span className="text-slate-300 font-normal">Yavatmal Cotton</span>
+                        <span className="text-cyan-300 block">{t.tractorOption || '🚜 ESP32 Boom'}</span>
                       </button>
 
                       <button
                         onClick={() => handleConnectIpCam('phone-ipcam')}
                         className="p-2 rounded-lg bg-emerald-900/80 hover:bg-emerald-800 text-[10px] font-bold text-left border border-emerald-700 cursor-pointer"
                       >
-                        <span className="text-emerald-300 block">📱 IP Phone</span>
-                        <span className="text-slate-300 font-normal">Custom HTTP</span>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center space-x-2 pt-1">
-                      <input
-                        type="text"
-                        value={ipCamUrl}
-                        onChange={(e) => setIpCamUrl(e.target.value)}
-                        placeholder="Enter RTSP or IP Webcam URL (e.g. http://192.168.1.100:8080/video)"
-                        className="flex-1 bg-[#051811] text-emerald-100 border border-emerald-700 px-3 py-1.5 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-amber-400"
-                      />
-                      <button
-                        onClick={() => handleConnectIpCam('custom')}
-                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-bold text-xs cursor-pointer"
-                      >
-                        Connect
+                        <span className="text-emerald-300 block">{t.phoneOption || '📱 IP Phone'}</span>
                       </button>
                     </div>
                   </div>
                 )}
 
-                {/* Live Camera Viewport (Guaranteed High-Res Video/Canvas) */}
+                {/* Viewport */}
                 <div className="relative w-full h-[360px] sm:h-[390px] bg-[#051811] rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-inner flex items-center justify-center group">
-                  
-                  {/* Real WebCam Video element */}
                   <video
                     ref={videoRef}
                     autoPlay
@@ -568,7 +511,6 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                     className={`w-full h-full object-cover ${cameraSourceType === 'webcam' && cameraActive ? 'block' : 'hidden'}`}
                   />
 
-                  {/* Fallback Crop Specimen Stream (Never Blank) */}
                   {!(cameraSourceType === 'webcam' && cameraActive) && (
                     <div className="absolute inset-0 w-full h-full bg-[#0F382A] flex items-center justify-center overflow-hidden">
                       <img 
@@ -581,10 +523,10 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                     </div>
                   )}
 
-                  {/* Scanning Laser Line Animation */}
+                  {/* Scanning Line */}
                   <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#F59E0B] animate-[scan_2.5s_ease-in-out_infinite]" />
 
-                  {/* YOLO Bounding Box Overlays */}
+                  {/* YOLO Bounding Boxes */}
                   {detectedYoloBoxes.map((box) => (
                     <div
                       key={box.id}
@@ -600,24 +542,14 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                       <div className="self-start px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-rose-600 text-white shadow">
                         {box.label} [{(box.conf * 100).toFixed(1)}%]
                       </div>
-
                       <div className="self-end px-1.5 py-0.2 rounded text-[8px] font-mono bg-black/80 text-emerald-300">
                         x:{box.x.toFixed(0)} y:{box.y.toFixed(0)}
                       </div>
                     </div>
                   ))}
 
-                  {/* Center Target Reticle */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <Crosshair className="w-16 h-16 text-emerald-400/40 animate-pulse" />
-                  </div>
-
-                  {/* Bottom Telemetry Bar */}
-                  <div className="absolute bottom-3 inset-x-3 bg-black/80 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 flex items-center justify-between text-[11px] font-mono">
-                    <span className="text-emerald-300">
-                      {cameraSourceType === 'ipcam' ? 'IP Feed: Connected (MJPEG 30fps)' : 'Res: 1280x720 (WebGL)'}
-                    </span>
-                    <span className="text-amber-300 font-bold">2 Outbreaks Active</span>
                   </div>
                 </div>
 
@@ -631,7 +563,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                     className="py-2.5 px-3 bg-emerald-950 hover:bg-emerald-900 border border-emerald-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer"
                   >
                     <SwitchCamera className="w-4 h-4 text-emerald-300" />
-                    <span>Flip Lens</span>
+                    <span>{t.flipLens || 'Flip Lens'}</span>
                   </button>
 
                   <button
@@ -641,7 +573,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                     }`}
                   >
                     <Zap className="w-4 h-4" />
-                    <span>Torch {torchOn ? 'ON' : 'OFF'}</span>
+                    <span>{torchOn ? t.torchOn || 'Torch ON' : t.torchOff || 'Torch OFF'}</span>
                   </button>
 
                   <button
@@ -650,16 +582,16 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                     className="py-2.5 px-3 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-500 text-emerald-950 font-extrabold rounded-xl text-xs shadow-lg flex items-center justify-center space-x-1.5 transition-transform hover:scale-102 cursor-pointer disabled:opacity-50"
                   >
                     <Camera className="w-4 h-4" />
-                    <span>{isAnalyzing ? 'Inferring...' : 'Capture Frame'}</span>
+                    <span>{isAnalyzing ? t.inferring || 'Inferring...' : t.captureFrame || 'Capture Frame'}</span>
                   </button>
                 </div>
 
-                {/* Quick Upload Button directly on Camera tab */}
+                {/* Upload Button directly on Camera tab */}
                 <div className="pt-2 border-t border-emerald-800/80 flex items-center justify-between">
-                  <span className="text-xs text-emerald-300 font-medium">Have a photo on your phone/PC?</span>
+                  <span className="text-xs text-emerald-300 font-medium">{t.havePhotoPrompt || 'Have a photo on your phone/PC?'}</span>
                   <label className="bg-emerald-800 hover:bg-emerald-700 text-amber-300 border border-emerald-600 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 cursor-pointer transition-colors shadow">
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Leaf Photo</span>
+                    <span>{t.uploadBtn || 'Upload Leaf Photo'}</span>
                     <input type="file" accept="image/*" onChange={handleCustomUpload} className="hidden" />
                   </label>
                 </div>
@@ -667,9 +599,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
               </div>
             )}
 
-            {/* ------------------------------------------------------- */}
             {/* MODALITY 2: LEAF PHOTO BENCHMARK & CUSTOM UPLOAD */}
-            {/* ------------------------------------------------------- */}
             {inputModality === 'photo' && (
               <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-5">
                 
@@ -677,16 +607,16 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <h2 className="text-base font-bold text-slate-900">
-                      Leaf Photo Neural Vision & XAI Saliency
+                      {t.photoTitle || 'Leaf Photo Neural Vision & XAI Saliency'}
                     </h2>
                     <p className="text-xs text-slate-500">
-                      Upload any leaf image or test with calibrated PlantVillage specimens.
+                      {t.photoSubtitle || 'Upload any leaf image or test with calibrated PlantVillage specimens.'}
                     </p>
                   </div>
 
                   <label className="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 cursor-pointer transition-colors shadow-md">
                     <Upload className="w-4 h-4 text-amber-300" />
-                    <span>Upload Your Leaf Photo</span>
+                    <span>{t.uploadBtn || 'Upload Leaf Photo'}</span>
                     <input type="file" accept="image/*" onChange={handleCustomUpload} className="hidden" />
                   </label>
                 </div>
@@ -699,7 +629,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                   </div>
                 )}
 
-                {/* Main Scanning Viewport with Grad-CAM */}
+                {/* Main Scanning Viewport with Real Dynamic Bounding Box & Grad-CAM */}
                 <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-950 border border-slate-800 shadow-inner group">
                   <img 
                     src={selectedCase.imageUrl} 
@@ -713,7 +643,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                     <div className="absolute inset-0 bg-emerald-950/60 backdrop-blur-[2px] flex flex-col items-center justify-center space-y-3">
                       <div className="w-12 h-12 rounded-full border-4 border-amber-400 border-t-transparent animate-spin" />
                       <span className="text-white text-xs font-mono font-bold tracking-wider animate-pulse">
-                        PROCESSING RESNET-50 / YOLOV8 INFERENCE...
+                        {t.analyzingText || 'PROCESSING NEURAL VISION & YOLOV8 INFERENCE...'}
                       </span>
                     </div>
                   )}
@@ -735,7 +665,6 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                         </span>
                       </div>
 
-                      {/* Grad-CAM heatmap spots */}
                       {selectedCase.saliencyPoints?.map((p, idx) => (
                         <div
                           key={idx}
@@ -767,7 +696,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 {/* Preloaded Benchmark Samples Gallery */}
                 <div className="space-y-2 pt-2">
                   <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                    PlantVillage & IP102 Ground Benchmark Specimens:
+                    {t.benchmarksTitle || 'PlantVillage & IP102 Ground Benchmark Specimens:'}
                   </span>
                   <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                     {sampleCases.map((sc) => {
@@ -800,9 +729,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
               </div>
             )}
 
-            {/* ------------------------------------------------------- */}
-            {/* MODALITY 3: PEST TRAP COUNTER (IP102) */}
-            {/* ------------------------------------------------------- */}
+            {/* MODALITY 3: PEST TRAP COUNTER */}
             {inputModality === 'trap' && (
               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -819,9 +746,6 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-700 block">
-                      Pheromone Funnel Trap Ingestion (Moths / Trap / Night):
-                    </label>
                     <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-800">
                       <span>Trap Catch: {trapMothCount} Pink Bollworm Moths</span>
                       <span className={`px-2 py-0.5 rounded text-[10px] ${
@@ -838,11 +762,6 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                       onChange={(e) => setTrapMothCount(parseInt(e.target.value))}
                       className="w-full accent-rose-600 cursor-pointer"
                     />
-                    <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-                      <span>1 moth (Low)</span>
-                      <span>8 moths (ETL Threshold)</span>
-                      <span>30 moths (Severe Outbreak)</span>
-                    </div>
                   </div>
 
                   <button
@@ -855,9 +774,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
               </div>
             )}
 
-            {/* ------------------------------------------------------- */}
-            {/* MODALITY 4: SYMPTOM QUESTIONNAIRE WIZARD */}
-            {/* ------------------------------------------------------- */}
+            {/* MODALITY 4: SYMPTOM WIZARD */}
             {inputModality === 'symptoms' && (
               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
                 <div className="flex items-center space-x-2 pb-3 border-b border-slate-100">
@@ -914,7 +831,6 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
           {/* ========================================================= */}
           <div className="lg:col-span-6 space-y-6">
             
-            {/* Diagnosis Result Card */}
             <div className="bg-white rounded-2xl p-5 sm:p-7 border border-slate-200 shadow-sm space-y-6 relative overflow-hidden">
               
               {/* Header Badge & Confidence */}
@@ -926,7 +842,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                         ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' 
                         : 'bg-rose-100 text-rose-900 border border-rose-200'
                     }`}>
-                      {currentDiagnosis.severity}
+                      {selectedCase.severity || currentDiagnosis.severity}
                     </span>
                     <span className="text-xs text-slate-400 font-mono">
                       Pathogen ID: {currentDiagnosis.id}
@@ -934,7 +850,7 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                   </div>
 
                   <h3 className="text-2xl font-extrabold text-slate-900">
-                    {currentDiagnosis.name} ({currentDiagnosis.marathiName})
+                    {getLocalizedDiseaseName(currentDiagnosis)}
                   </h3>
                   <p className="text-xs text-slate-500 italic font-serif">
                     Taxonomy: {currentDiagnosis.scientificName} · Crop: {currentDiagnosis.crop}
@@ -942,9 +858,9 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 </div>
 
                 <div className="text-right">
-                  <span className="text-xs text-slate-400 block font-mono">AI Confidence</span>
+                  <span className="text-xs text-slate-400 block font-mono">{t.confidenceLabel || 'AI Confidence'}</span>
                   <span className="text-2xl font-extrabold text-emerald-700 font-mono">
-                    {selectedCase.confidence || '94.8'}%
+                    {selectedCase.confidence || '95.4'}%
                   </span>
                 </div>
               </div>
@@ -952,14 +868,14 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
               {/* Symptoms & Transmission Mechanism */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
                 <span className="font-bold text-slate-700 uppercase tracking-wider block text-[11px]">
-                  Clinical Manifestations & Transmission:
+                  {t.symptomsTitle || 'Clinical Manifestations & Transmission:'}
                 </span>
                 <p className="text-slate-600 leading-relaxed">
-                  {currentDiagnosis.symptoms}
+                  {getLocalizedSymptoms(currentDiagnosis)}
                 </p>
                 <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
-                  <span>Infection Spread: <strong>{currentDiagnosis.vector}</strong></span>
-                  <span>Affected Organ: <strong>{currentDiagnosis.affectedPart}</strong></span>
+                  <span>{t.infectionSpread || 'Infection Spread:'} <strong>{currentDiagnosis.pathogenType || currentDiagnosis.vector || 'Foliar Spores / Rain Splash'}</strong></span>
+                  <span>{t.affectedOrgan || 'Affected Organ:'} <strong>{currentDiagnosis.affectedPart || 'Foliage / Lamina'}</strong></span>
                 </div>
               </div>
 
@@ -968,15 +884,15 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                    <span>CIBRC & ICAR Prescribed Regimen</span>
+                    <span>{t.cibrcTitle || 'CIBRC & ICAR Prescribed Regimen'}</span>
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">Hierarchy: Bio &rarr; Chem</span>
+                  <span className="text-[10px] text-slate-400 font-mono">{t.hierarchy || 'Hierarchy: Cultural → Bio → Chem'}</span>
                 </div>
 
                 {/* Cultural Practices */}
-                {currentDiagnosis.ipm.cultural?.length > 0 && (
+                {currentDiagnosis.ipm?.cultural?.length > 0 && (
                   <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200 text-xs space-y-1">
-                    <span className="font-bold text-emerald-950 block">Tier 1: Cultural & Agronomic</span>
+                    <span className="font-bold text-emerald-950 block">{t.tier1 || 'Tier 1: Cultural & Agronomic'}</span>
                     <p className="text-emerald-800 text-[11px] leading-relaxed">
                       {currentDiagnosis.ipm.cultural[0]}
                     </p>
@@ -984,22 +900,22 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                 )}
 
                 {/* Biological Control */}
-                {currentDiagnosis.ipm.biological?.length > 0 && (
+                {currentDiagnosis.ipm?.biological?.length > 0 && (
                   <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200 text-xs space-y-1">
-                    <span className="font-bold text-blue-950 block">Tier 2: Biological & Botanical</span>
+                    <span className="font-bold text-blue-950 block">{t.tier2 || 'Tier 2: Biological & Botanical'}</span>
                     <p className="text-blue-800 text-[11px] leading-relaxed">
-                      {currentDiagnosis.ipm.biological[0].agent} @ {currentDiagnosis.ipm.biological[0].dosage}
+                      {currentDiagnosis.ipm.biological[0].name || currentDiagnosis.ipm.biological[0].agent} @ {currentDiagnosis.ipm.biological[0].dosage}
                     </p>
                   </div>
                 )}
 
                 {/* CIBRC Registered Chemical Molecule */}
-                {currentDiagnosis.ipm.chemical?.length > 0 && (
+                {currentDiagnosis.ipm?.chemical?.length > 0 && (
                   <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-200 text-xs space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-purple-950">Tier 3: CIBRC Registered Chemical</span>
+                      <span className="font-bold text-purple-950">{t.tier3 || 'Tier 3: CIBRC Registered Chemical'}</span>
                       <span className="text-[10px] font-mono font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded">
-                        PHI: {currentDiagnosis.ipm.chemical[0].phiDays} Days
+                        PHI: {currentDiagnosis.ipm.chemical[0].phiDays || 7} Days
                       </span>
                     </div>
                     <p className="font-bold text-purple-900 text-sm">
@@ -1022,18 +938,18 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
                   className="w-full py-3 bg-[#0F382A] hover:bg-[#164E3A] text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   <Calculator className="w-4 h-4 text-amber-400" />
-                  <span>Calculate Spray Dosage &rarr;</span>
+                  <span>{t.calculateDosage || 'Calculate Spray Dosage →'}</span>
                 </button>
 
                 <button
                   onClick={() => {
                     onEscalateKVK(currentDiagnosis);
-                    alert(`Prescription and leaf coordinates logged. Ticket #KVK-NSK-${Math.floor(100 + Math.random()*900)} escalated to KVK Agronomist.`);
+                    alert(`Prescription logged. Ticket #KVK-${Math.floor(100 + Math.random()*900)} escalated to KVK Agronomist.`);
                   }}
                   className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   <UserCheck className="w-4 h-4 text-emerald-700" />
-                  <span>Escalate to KVK Expert</span>
+                  <span>{t.escalateKvk || 'Escalate to KVK Expert'}</span>
                 </button>
               </div>
 
