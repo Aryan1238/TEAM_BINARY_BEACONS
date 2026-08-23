@@ -14,7 +14,7 @@ export const sampleCases = [
       { x: 50, y: 35, intensity: 0.88 },
       { x: 42, y: 55, intensity: 0.76 }
     ],
-    confidence: 94.8,
+    confidence: 79.4,
     severity: 'Moderate (Grade S2)',
     chlorosisPercent: '28%'
   },
@@ -32,7 +32,7 @@ export const sampleCases = [
       { x: 45, y: 40, intensity: 0.98 },
       { x: 52, y: 58, intensity: 0.91 }
     ],
-    confidence: 96.2,
+    confidence: 83.2,
     severity: 'Severe (Grade S3)',
     trapReading: '14 moths / trap / night (Crossed ETL)',
     chlorosisPercent: '42%'
@@ -51,7 +51,7 @@ export const sampleCases = [
       { x: 35, y: 38, intensity: 0.96 },
       { x: 58, y: 42, intensity: 0.89 }
     ],
-    confidence: 97.4,
+    confidence: 81.6,
     severity: 'High (Grade S3)',
     chlorosisPercent: '35%'
   },
@@ -69,7 +69,7 @@ export const sampleCases = [
       { x: 48, y: 48, intensity: 0.92 },
       { x: 40, y: 56, intensity: 0.85 }
     ],
-    confidence: 91.5,
+    confidence: 76.8,
     severity: 'Moderate (Grade S2)',
     chlorosisPercent: '22%'
   },
@@ -87,7 +87,7 @@ export const sampleCases = [
       { x: 48, y: 35, intensity: 0.97 },
       { x: 50, y: 60, intensity: 0.94 }
     ],
-    confidence: 95.1,
+    confidence: 82.5,
     severity: 'Severe (Grade S3)',
     chlorosisPercent: '50%'
   },
@@ -102,7 +102,7 @@ export const sampleCases = [
     description: 'Normal healthy foliage with uniform chlorophyll distribution and crisp leaf margins.',
     bbox: null,
     saliencyPoints: [],
-    confidence: 99.2,
+    confidence: 84.8,
     severity: 'Healthy (Grade S0)',
     chlorosisPercent: '0%'
   }

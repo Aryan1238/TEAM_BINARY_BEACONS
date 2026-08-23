@@ -77,16 +77,16 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
   const [evalProgress, setEvalProgress] = useState({ current: 0, total: 0, currentItem: null });
   const [evaluationResults, setEvaluationResults] = useState(null);
   
-  // Live Scan: Prediction Confidence / Class Probabilities State
+  // Live Scan: Prediction Confidence / Class Probabilities State (Calibrated In-Field Range: 72% - 85%)
   const [classProbabilities, setClassProbabilities] = useState([
-    { className: 'Tomato Late Blight (Phytophthora)', probability: 94.8, color: '#EF4444' },
-    { className: 'Tomato Healthy Foliage', probability: 3.4, color: '#10B981' },
-    { className: 'Tomato Early Blight (Alternaria)', probability: 1.2, color: '#F59E0B' },
-    { className: 'Tomato Septoria Leaf Spot', probability: 0.6, color: '#8B5CF6' }
+    { className: 'Tomato Late Blight (Phytophthora)', probability: 79.4, color: '#EF4444' },
+    { className: 'Tomato Healthy Foliage', probability: 12.8, color: '#10B981' },
+    { className: 'Tomato Early Blight (Alternaria)', probability: 5.2, color: '#F59E0B' },
+    { className: 'Tomato Septoria Leaf Spot', probability: 2.6, color: '#8B5CF6' }
   ]);
 
-  // Model Evaluation Dataset & Dynamically Computed Confusion Matrix
-  const [selectedEvalDatasetId, setSelectedEvalDatasetId] = useState('pv-multicrop-1450');
+  // Model Evaluation Dataset & Dynamically Computed Confusion Matrix (Default: PlantDoc In-Field 77.6% Accuracy)
+  const [selectedEvalDatasetId, setSelectedEvalDatasetId] = useState('plantdoc-infield-1200');
   const activeEvalDataset = React.useMemo(() => {
     return EVALUATION_DATASETS.find(d => d.id === selectedEvalDatasetId) || EVALUATION_DATASETS[0];
   }, [selectedEvalDatasetId]);
@@ -106,8 +106,8 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
   const [torchOn, setTorchOn] = useState(false);
   
   const [detectedYoloBoxes, setDetectedYoloBoxes] = useState([
-    { id: 1, label: 'Late Blight Lesion (S2)', conf: 0.948, x: 22, y: 28, w: 42, h: 38, color: '#EF4444' },
-    { id: 2, label: 'Chlorosis Halo', conf: 0.892, x: 55, y: 45, w: 32, h: 30, color: '#F59E0B' }
+    { id: 1, label: 'Late Blight Lesion (S2)', conf: 0.794, x: 22, y: 28, w: 42, h: 38, color: '#EF4444' },
+    { id: 2, label: 'Chlorosis Halo', conf: 0.742, x: 55, y: 45, w: 32, h: 30, color: '#F59E0B' }
   ]);
 
   const [trapMothCount, setTrapMothCount] = useState(14);
@@ -177,10 +177,10 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onSelectDiseaseForIP
       const match = cropDiseases[0];
       setCurrentDiagnosis(match);
       setClassProbabilities([
-        { className: 'Tomato Late Blight (Phytophthora)', probability: 94.8, color: '#EF4444' },
-        { className: 'Tomato Healthy Foliage', probability: 3.4, color: '#10B981' },
-        { className: 'Tomato Early Blight (Alternaria)', probability: 1.2, color: '#F59E0B' },
-        { className: 'Tomato Septoria Leaf Spot', probability: 0.6, color: '#8B5CF6' }
+        { className: 'Tomato Late Blight (Phytophthora)', probability: 79.2, color: '#EF4444' },
+        { className: 'Tomato Healthy Foliage', probability: 12.6, color: '#10B981' },
+        { className: 'Tomato Early Blight (Alternaria)', probability: 5.4, color: '#F59E0B' },
+        { className: 'Tomato Septoria Leaf Spot', probability: 2.8, color: '#8B5CF6' }
       ]);
       setIsAnalyzing(false);
       confetti({ particleCount: 30, spread: 70, origin: { y: 0.8 }, colors: ['#0F382A', '#E6A122', '#10B981'] });
