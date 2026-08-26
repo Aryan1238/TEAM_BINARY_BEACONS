@@ -1,307 +1,539 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
-from PIL import Image
-from dotenv import load_dotenv
-
-import io
 import os
 import json
-import re
+import base64
+import mimetypes
+import urllib.request
+import urllib.error
 
-# Import ResNet18 Transfer Learning ML Pipeline
-from pipeline.unified_pipeline import UnifiedCropHealthPipeline
-from pipeline.feedback_loop import ActiveLearningFeedbackLoop
-from geospatial.hotspot_analyzer import GeospatialHotspotAnalyzer
-from models.risk_forecaster import WeatherRiskForecaster
-
-
-# ============================================================
-# LOAD ENVIRONMENT VARIABLES & GEMINI
-# ============================================================
-load_dotenv()
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-
-client = None
-if GEMINI_API_KEY:
-    try:
-        from google import genai
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        print(f"✅ Gemini Client initialized with model: {MODEL_NAME}")
-    except Exception as e:
-        print(f"⚠️ Warning initializing Gemini Client: {e}")
-else:
-    print("ℹ️ GEMINI_API_KEY not set. Running with native Pretrained ResNet18 Transfer Learning Engine.")
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 
-# ============================================================
-# ML ENGINE INITIALIZATION
-# ============================================================
-ml_pipeline = UnifiedCropHealthPipeline()
-feedback_loop = ActiveLearningFeedbackLoop()
-hotspot_analyzer = GeospatialHotspotAnalyzer()
-risk_forecaster = WeatherRiskForecaster()
+# =========================================================
+# APP CONFIG
+# =========================================================
 
-
-# ============================================================
-# FASTAPI APP & CORS SETUP
-# ============================================================
 app = FastAPI(
-    title="KrishiRakshak ML & AI Backend",
-    description="SIH 2026 PS 26131 Pretrained ResNet18 Crop Health & Disease Classification API",
-    version="4.0.0"
+    title="KrishiRakshak AI",
+    description="AI based crop disease detection API",
+    version="1.0.0"
 )
+
+# Frontend ports
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5175",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5175",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# ============================================================
-# PYDANTIC DATA MODELS
-# ============================================================
-class WeatherRiskRequest(BaseModel):
-    temperature: float = 28.5
-    humidity: float = 82.0
-    rainfall: float = 18.0
-    leaf_wetness_hours: float = 9.0
-    crop_name: str = "corn"
-    growth_stage: str = "vegetative"
-    pest_history_score: float = 0.3
+# =========================================================
+# GEMINI CONFIG
+# =========================================================
+
+GEMINI_API_KEY = (
+    os.getenv("GEMINI_API_KEY")
+    or os.getenv("GOOGLE_API_KEY")
+    or os.getenv("API_KEY")
+)
+
+GEMINI_MODEL = os.getenv(
+    "GEMINI_MODEL",
+    "gemini-3.6-flash"
+)
 
 
-class FeedbackRequest(BaseModel):
-    sample_id: str
-    predicted_class: str
-    expert_confirmed_class: str
-    extension_worker_id: Optional[str] = "FARMER_SELF"
-    notes: Optional[str] = ""
+# =========================================================
+# LOAD .ENV MANUALLY
+# =========================================================
+
+def load_env_file():
+    """
+    Loads simple KEY=VALUE pairs from backend/.env
+    if environment variables are not already available.
+    """
+
+    global GEMINI_API_KEY, GEMINI_MODEL
+
+    env_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        ".env"
+    )
+
+    if not os.path.exists(env_path):
+        return
+
+    try:
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+
+                if not line:
+                    continue
+
+                if line.startswith("#"):
+                    continue
+
+                if "=" not in line:
+                    continue
+
+                key, value = line.split("=", 1)
+
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+
+                if key == "GEMINI_API_KEY" and not GEMINI_API_KEY:
+                    GEMINI_API_KEY = value
+
+                elif key == "GOOGLE_API_KEY" and not GEMINI_API_KEY:
+                    GEMINI_API_KEY = value
+
+                elif key == "API_KEY" and not GEMINI_API_KEY:
+                    GEMINI_API_KEY = value
+
+                elif key == "GEMINI_MODEL":
+                    GEMINI_MODEL = value
+
+    except Exception as e:
+        print("Warning: Could not read .env:", e)
 
 
-# ============================================================
-# HOME & HEALTH ENDPOINTS
-# ============================================================
+load_env_file()
+
+
+# =========================================================
+# HEALTH CHECK
+# =========================================================
+
 @app.get("/")
-def home():
+async def root():
     return {
         "success": True,
-        "message": "KrishiRakshak ResNet18 ML & AI Backend is running 🚀",
-        "problem_statement": "SIH 2026 PS 26131 - Govt of Maharashtra",
-        "ml_engine": "Pretrained ResNet18 Transfer Learning Engine v4.0",
-        "gemini_active": client is not None
+        "message": "KrishiRakshak AI backend is running",
+        "backend": "online"
     }
 
 
 @app.get("/health")
-def health():
+async def health():
     return {
         "success": True,
         "status": "healthy",
         "backend": "online",
-        "ai_model": MODEL_NAME,
-        "ml_engine": "ResNet18 Transfer Learning Pipeline v4.0"
+        "ai_model": GEMINI_MODEL
     }
 
 
-# ============================================================
-# HELPER: PARSE CROP & DISEASE FROM TAXONOMY
-# ============================================================
-def parse_resnet_class(class_key: str):
-    if "___" in class_key:
-        parts = class_key.split("___")
-        raw_crop = parts[0].replace("_", " ").replace("(maize)", "").strip()
-        raw_disease = parts[1].replace("_", " ").strip()
-    else:
-        raw_crop = "Crop Leaf"
-        raw_disease = class_key.replace("_", " ")
+# =========================================================
+# GEMINI API CALL
+# =========================================================
 
-    if "healthy" in raw_disease.lower():
-        disease_title = f"Healthy {raw_crop}"
-    else:
-        disease_title = f"{raw_disease}"
+def call_gemini(image_bytes: bytes, mime_type: str):
+    """
+    Sends image to Gemini REST API.
+    """
 
-    return raw_crop.title(), disease_title.title()
+    if not GEMINI_API_KEY:
+        raise Exception(
+            "Gemini API key not found. "
+            "Add GEMINI_API_KEY=YOUR_KEY inside backend/.env"
+        )
+
+    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+    prompt = """
+You are an expert agricultural AI crop disease detection system.
+
+Analyze the uploaded crop/plant image carefully.
+
+Return ONLY valid JSON.
+Do not use markdown.
+Do not add ```json.
+Do not add explanations outside JSON.
+
+Use exactly this structure:
+
+{
+  "is_crop": true,
+  "crop_name": "Soybean",
+  "disease": "Frogeye Leaf Spot",
+  "confidence": 92,
+  "risk_level": "MEDIUM",
+  "summary": "Short explanation of the visible symptoms.",
+  "recommendations": [
+    "Recommendation 1",
+    "Recommendation 2",
+    "Recommendation 3",
+    "Recommendation 4"
+  ]
+}
+
+Rules:
+
+1. is_crop must be true or false.
+2. confidence must be an integer from 0 to 100.
+3. risk_level must be LOW, MEDIUM, HIGH or UNKNOWN.
+4. If the image is not a crop/plant image:
+   - is_crop = false
+   - crop_name = "Unknown"
+   - disease = "Not a crop image"
+   - confidence = 0
+   - risk_level = "UNKNOWN"
+   - give useful recommendations explaining that a crop image is required.
+5. Identify the crop and visible disease/problem as accurately as possible.
+6. Do not invent extremely specific information if the image is unclear.
+7. Recommendations should be practical for farmers.
+"""
 
 
-# ============================================================
-# MAIN FRONTEND ANALYZE ENDPOINT (For CropScanner.jsx)
-# ============================================================
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+    )
+
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": prompt
+                    },
+                    {
+                        "inline_data": {
+                            "mime_type": mime_type,
+                            "data": image_base64
+                        }
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.2,
+            "responseMimeType": "application/json"
+        }
+    }
+
+    request_data = json.dumps(payload).encode("utf-8")
+
+    request = urllib.request.Request(
+        url,
+        data=request_data,
+        headers={
+            "Content-Type": "application/json"
+        },
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(
+            request,
+            timeout=90
+        ) as response:
+
+            response_data = response.read().decode("utf-8")
+
+            return json.loads(response_data)
+
+    except urllib.error.HTTPError as e:
+
+        error_body = e.read().decode("utf-8", errors="ignore")
+
+        print("Gemini HTTP Error:", e.code)
+        print("Gemini Error Body:", error_body)
+
+        raise Exception(
+            f"Gemini API error ({e.code}): {error_body}"
+        )
+
+    except urllib.error.URLError as e:
+
+        print("Gemini connection error:", e)
+
+        raise Exception(
+            "Could not connect to Gemini API."
+        )
+
+    except Exception as e:
+
+        print("Gemini request failed:", e)
+
+        raise Exception(
+            f"Gemini request failed: {str(e)}"
+        )
+
+
+# =========================================================
+# EXTRACT GEMINI TEXT
+# =========================================================
+
+def extract_gemini_text(result):
+    """
+    Extracts generated text from Gemini response.
+    """
+
+    try:
+        candidates = result.get("candidates", [])
+
+        if not candidates:
+            raise Exception("Gemini returned no candidates.")
+
+        content = candidates[0].get("content", {})
+
+        parts = content.get("parts", [])
+
+        if not parts:
+            raise Exception("Gemini returned no response parts.")
+
+        text = parts[0].get("text", "")
+
+        if not text:
+            raise Exception("Gemini returned an empty response.")
+
+        return text.strip()
+
+    except Exception as e:
+        raise Exception(
+            f"Could not read Gemini response: {str(e)}"
+        )
+
+
+# =========================================================
+# CLEAN JSON
+# =========================================================
+
+def clean_json_text(text):
+    """
+    Removes accidental markdown wrappers.
+    """
+
+    text = text.strip()
+
+    if text.startswith("```json"):
+        text = text[7:]
+
+    elif text.startswith("```"):
+        text = text[3:]
+
+    if text.endswith("```"):
+        text = text[:-3]
+
+    return text.strip()
+
+
+# =========================================================
+# ANALYZE IMAGE
+# =========================================================
+
 @app.post("/analyze")
 async def analyze_crop(file: UploadFile = File(...)):
-    allowed_types = ["image/jpeg", "image/png", "image/jpg", "image/webp"]
 
-    if file.content_type not in allowed_types:
-        return {
-            "success": False,
-            "message": "Please upload a JPG, JPEG, PNG or WEBP image."
-        }
+    print("\n========================================")
+    print("NEW CROP ANALYSIS REQUEST")
+    print("Filename:", file.filename)
+    print("Content Type:", file.content_type)
+    print("========================================")
+
+    # -----------------------------------------------------
+    # Validate file
+    # -----------------------------------------------------
+
+    if not file:
+        raise HTTPException(
+            status_code=400,
+            detail="No image file received."
+        )
+
+    allowed_types = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "image/webp"
+    ]
+
+    content_type = file.content_type or ""
+
+    if content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Unsupported image type. "
+                "Please upload JPG, JPEG, PNG or WEBP."
+            )
+        )
+
+    # -----------------------------------------------------
+    # Read image
+    # -----------------------------------------------------
 
     try:
         image_bytes = await file.read()
-        if not image_bytes:
-            return {"success": False, "message": "Uploaded file is empty."}
 
-        # Run ResNet18 Transfer Learning Classifier
-        visual_diag = ml_pipeline.image_classifier.predict(image_bytes)
-        predicted_class_key = visual_diag.get("predicted_class", "Corn_(maize)___Northern_Leaf_Blight")
-        confidence_val = int(visual_diag.get("confidence", 0.92) * 100)
+    except Exception as e:
 
-        crop_name, disease_name = parse_resnet_class(predicted_class_key)
-
-        # Run Multi-modal Weather & IPM Pipeline
-        ml_res = ml_pipeline.process_full_diagnosis(
-            image_input=image_bytes,
-            crop_name=crop_name.lower(),
-            growth_stage="flowering",
-            temperature=28.5,
-            humidity=82.0,
-            rainfall=15.0,
-            leaf_wetness_hours=9.0
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not read uploaded image: {str(e)}"
         )
 
-        advisory = ml_res.get("integrated_pest_management_advisory", {})
-        ipm_steps = advisory.get("integrated_management_steps", {})
-        risk_level = ml_res.get("weather_risk_forecasting", {}).get("risk_level", "HIGH")
+    if not image_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded image is empty."
+        )
 
-        recommendations_list = [
-            f"Cultural Practice: {ipm_steps.get('step1_cultural', 'Crop rotation with non-host crops. Destroy crop residue after harvest.')}",
-            f"Biological Treatment: {ipm_steps.get('step2_biological', 'Apply Trichoderma harzianum @ 5g/L or Pseudomonas fluorescens @ 10g/L spray.')}",
-            f"Chemical Spray: {ipm_steps.get('step3_chemical', 'Spray Mancozeb 75% WP @ 2.5 g/L or Azoxystrobin 23% SC @ 1 ml/L.')}",
-            f"Safety Guideline: {advisory.get('safety_guidelines', 'Wear protective equipment. Observe 14 days pre-harvest interval (PHI).')}"
+    # 10 MB limit
+    max_size = 10 * 1024 * 1024
+
+    if len(image_bytes) > max_size:
+        raise HTTPException(
+            status_code=400,
+            detail="Image is too large. Maximum size is 10 MB."
+        )
+
+    print("Image size:", len(image_bytes), "bytes")
+
+    # -----------------------------------------------------
+    # Gemini
+    # -----------------------------------------------------
+
+    try:
+
+        gemini_response = call_gemini(
+            image_bytes,
+            content_type
+        )
+
+        print("Gemini response received.")
+
+        generated_text = extract_gemini_text(
+            gemini_response
+        )
+
+        generated_text = clean_json_text(
+            generated_text
+        )
+
+        print("Gemini text:")
+        print(generated_text)
+
+        analysis = json.loads(
+            generated_text
+        )
+
+    except json.JSONDecodeError as e:
+
+        print("JSON parsing error:", e)
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "AI returned an invalid JSON response. "
+                f"Raw response: {generated_text if 'generated_text' in locals() else 'N/A'}"
+            )
+        )
+
+    except Exception as e:
+
+        print("ANALYSIS ERROR:", e)
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+    # -----------------------------------------------------
+    # Normalize response
+    # -----------------------------------------------------
+
+    is_crop = bool(
+        analysis.get("is_crop", True)
+    )
+
+    crop_name = str(
+        analysis.get("crop_name", "Unknown")
+    )
+
+    disease = str(
+        analysis.get("disease", "Unknown")
+    )
+
+    try:
+        confidence = int(
+            analysis.get("confidence", 0)
+        )
+    except:
+        confidence = 0
+
+    confidence = max(
+        0,
+        min(100, confidence)
+    )
+
+    risk_level = str(
+        analysis.get("risk_level", "UNKNOWN")
+    ).upper()
+
+    summary = str(
+        analysis.get(
+            "summary",
+            "No summary available."
+        )
+    )
+
+    recommendations = analysis.get(
+        "recommendations",
+        []
+    )
+
+    if not isinstance(
+        recommendations,
+        list
+    ):
+        recommendations = [
+            str(recommendations)
         ]
 
-        width, height = 224, 224
-        try:
-            pil_img = Image.open(io.BytesIO(image_bytes))
-            width, height = pil_img.size
-        except Exception:
-            pass
+    recommendations = [
+        str(item)
+        for item in recommendations
+    ]
 
-        return {
-            "success": True,
-            "message": "Crop image analyzed successfully by Pretrained ResNet18 Engine.",
-            "image": {
-                "filename": file.filename,
-                "type": file.content_type,
-                "width": width,
-                "height": height
-            },
-            "analysis": {
-                "is_crop": True,
-                "crop_name": crop_name,
-                "disease": disease_name,
-                "confidence": confidence_val,
-                "risk_level": risk_level,
-                "summary": f"Detected {disease_name} on {crop_name} with {confidence_val}% confidence. Outbreak risk is rated as {risk_level}.",
-                "recommendations": recommendations_list,
-                "top5_predictions": visual_diag.get("top5_predictions", {}),
-                "heatmap_base64": visual_diag.get("heatmap_base64", ""),
-                "pest_trap_analysis": ml_res.get("pest_trap_analysis")
-            }
+    # -----------------------------------------------------
+    # Final response
+    # -----------------------------------------------------
+
+    response = {
+        "success": True,
+
+        "message": "Image analyzed successfully.",
+
+        "image": {
+            "filename": file.filename,
+            "type": content_type,
+            "size": len(image_bytes)
+        },
+
+        "analysis": {
+            "is_crop": is_crop,
+            "crop_name": crop_name,
+            "disease": disease,
+            "confidence": confidence,
+            "risk_level": risk_level,
+            "summary": summary,
+            "recommendations": recommendations
         }
+    }
 
-    except Exception as e:
-        print("CROP ANALYSIS ERROR:", e)
-        return {
-            "success": False,
-            "message": "Crop analysis failed.",
-            "error": str(e)
-        }
+    print("\nANALYSIS COMPLETE")
+    print(json.dumps(response, indent=2))
 
-
-# ============================================================
-# EXTENDED ML MICROSERVICE API ENDPOINTS
-# ============================================================
-@app.post("/api/v1/ml/diagnose-image")
-async def ml_diagnose_image(
-    file: UploadFile = File(...),
-    crop_name: Optional[str] = Form("corn")
-):
-    try:
-        contents = await file.read()
-        res = ml_pipeline.image_classifier.predict(contents, crop_hint=crop_name)
-        return {"status": "success", "diagnosis": res}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/v1/ml/count-pests")
-async def ml_count_pests(file: UploadFile = File(...)):
-    try:
-        contents = await file.read()
-        res = ml_pipeline.pest_detector.detect_and_count(contents)
-        return {"status": "success", "pest_analysis": res}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/v1/ml/predict-risk")
-def ml_predict_risk(req: WeatherRiskRequest):
-    try:
-        res = risk_forecaster.predict_risk(
-            temperature=req.temperature,
-            humidity=req.humidity,
-            rainfall=req.rainfall,
-            leaf_wetness_hours=req.leaf_wetness_hours,
-            crop_name=req.crop_name,
-            growth_stage=req.growth_stage,
-            pest_history_score=req.pest_history_score
-        )
-        return {"status": "success", "weather_risk": res}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/api/v1/ml/full-diagnosis")
-async def ml_full_diagnosis(
-    file: Optional[UploadFile] = File(None),
-    crop_name: str = Form("corn"),
-    growth_stage: str = Form("vegetative"),
-    temperature: float = Form(28.5),
-    humidity: float = Form(82.0),
-    rainfall: float = Form(18.0),
-    leaf_wetness_hours: float = Form(9.0),
-    latitude: float = Form(20.9374),
-    longitude: float = Form(77.7796)
-):
-    try:
-        img_bytes = await file.read() if file else None
-        res = ml_pipeline.process_full_diagnosis(
-            image_input=img_bytes,
-            crop_name=crop_name,
-            growth_stage=growth_stage,
-            temperature=temperature,
-            humidity=humidity,
-            rainfall=rainfall,
-            leaf_wetness_hours=leaf_wetness_hours,
-            latitude=latitude,
-            longitude=longitude
-        )
-        return res
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/v1/ml/hotspots")
-def ml_get_hotspots():
-    res = hotspot_analyzer.analyze_hotspots()
-    return {"status": "success", "hotspots": res}
-
-
-@app.post("/api/v1/ml/submit-feedback")
-def ml_submit_feedback(req: FeedbackRequest):
-    res = feedback_loop.submit_feedback(
-        sample_id=req.sample_id,
-        predicted_class=req.predicted_class,
-        expert_confirmed_class=req.expert_confirmed_class,
-        extension_worker_id=req.extension_worker_id,
-        notes=req.notes
-    )
-    return res
+    return response
