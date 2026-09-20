@@ -13,8 +13,6 @@ import {
 import { speakAdvisory, stopSpeech } from '../utils/audioSpeech';
 
 export const OfflineSMSSimulator = ({ isOpen, onClose, currentLang }) => {
-  if (!isOpen) return null;
-
   const [mode, setMode] = useState('sms'); // 'sms' | 'ivr'
   const [inputQuery, setInputQuery] = useState('PEST TOMATO NASHIK YELLOW SPOTS');
   const [messages, setMessages] = useState([
@@ -25,6 +23,8 @@ export const OfflineSMSSimulator = ({ isOpen, onClose, currentLang }) => {
   ]);
   const [isCalling, setIsCalling] = useState(false);
   const [ivrStep, setIvrStep] = useState(1);
+
+  if (!isOpen) return null;
 
   const handleSendSMS = () => {
     if (!inputQuery.trim()) return;

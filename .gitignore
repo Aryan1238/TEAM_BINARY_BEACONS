@@ -25,3 +25,24 @@ dist-ssr
 
 .vercel
 .env*
+
+# Datasets and Benchmark Artifacts
+dataset/
+dataset_raw/
+cleaned_dataset/
+cleaned_dataset_leakage_safe/
+
+# Python & Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# Large Model Binaries
+*.pth
+*.pt
+*.onnx
+*.wasm

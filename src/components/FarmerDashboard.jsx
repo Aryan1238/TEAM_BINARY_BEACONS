@@ -1,299 +1,1028 @@
 import React, { useState } from 'react';
 import { 
-  Sprout, 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
-  AlertTriangle, 
-  Scan, 
-  UserCheck, 
+  Camera, 
   MapPin, 
-  ChevronRight, 
-  Phone, 
-  Droplets, 
   Plus, 
-  Check,
+  AlertCircle,
+  Cloud,
+  Sprout,
+  Phone,
   ShieldCheck,
-  MessageSquare
+  Award
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { LabReferralModal } from './LabReferralModal';
+import { AddFieldModal } from './AddFieldModal';
+import { DeviceFrame } from './DeviceFrame';
+import { FloatingViewToggle } from './FloatingViewToggle';
 
 export const FarmerDashboard = ({ currentLang, onNavigate }) => {
-  const [sprayDone, setSprayDone] = useState(false);
+  const [viewMode, setViewMode] = useState('website'); // 'website' | 'mobile'
+  const [isLabOpen, setIsLabOpen] = useState(false);
+  const [isAddFieldOpen, setIsAddFieldOpen] = useState(false);
 
-  const handleMarkSprayDone = () => {
-    setSprayDone(true);
-    confetti({
-      particleCount: 30,
-      spread: 60,
-      origin: { y: 0.6 },
-      colors: ['#0F382A', '#10B981', '#E6A122']
-    });
+  const [farmer, setFarmer] = useState({
+    name: 'Ramesh Patil',
+    location: 'Nashik District, Maharashtra · 4.5 acres under cultivation',
+    acres: 4.5,
+    totalScans: 14,
+    issuesDetected: 6,
+    resolved: 5,
+    lossPrevented: 8200
+  });
+
+  const [fields, setFields] = useState([
+    {
+      id: 'field-1',
+      name: 'North Field – Tomato',
+      crop: 'Tomato (Abhinav F1)',
+      acres: 1.2,
+      status: 'At Risk',
+      imageUrl: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=800&q=80',
+      lastScanned: 'Today, 9:14 AM',
+      healthScore: 72
+    },
+    {
+      id: 'field-2',
+      name: 'South Field – Cotton',
+      crop: 'Cotton (Bt-II)',
+      acres: 2.5,
+      status: 'Healthy',
+      imageUrl: 'https://images.unsplash.com/photo-1594488500257-7945d8b7b75a?auto=format&fit=crop&w=800&q=80',
+      lastScanned: 'Yesterday, 4:30 PM',
+      healthScore: 94
+    },
+    {
+      id: 'field-3',
+      name: 'East Field – Wheat',
+      crop: 'Wheat (Lokwan / Sharbati)',
+      acres: 0.8,
+      status: 'Monitored',
+      imageUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=800&q=80',
+      lastScanned: '3 days ago',
+      healthScore: 86
+    }
+  ]);
+
+  const recentScans = [
+    {
+      id: 'scan-1',
+      crop: 'Tomato',
+      disease: 'Early Blight',
+      confidence: 91,
+      severity: 'High',
+      time: 'Today, 9:14 AM',
+      image: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=400&q=80'
+    },
+    {
+      id: 'scan-2',
+      crop: 'Cotton',
+      disease: 'Bollworm',
+      confidence: 85,
+      severity: 'Medium',
+      time: 'Yesterday',
+      image: 'https://images.unsplash.com/photo-1606041008023-472dfb5e530f?auto=format&fit=crop&w=400&q=80'
+    },
+    {
+      id: 'scan-3',
+      crop: 'Rice',
+      disease: 'Blast Disease',
+      confidence: 78,
+      severity: 'Low',
+      time: 'Aug 20',
+      image: 'https://images.unsplash.com/photo-1536700503339-1e4b06520771?auto=format&fit=crop&w=400&q=80'
+    }
+  ];
+
+  const hotspots = [
+    { id: 'hs-1', district: 'Nashik', disease: 'Downy Mildew', cases: 34, isCritical: true },
+    { id: 'hs-2', district: 'Pune', disease: 'Rust', cases: 21, isCritical: false },
+    { id: 'hs-3', district: 'Aurangabad', disease: 'Pink Bollworm', cases: 18, isCritical: false },
+    { id: 'hs-4', district: 'Nagpur', disease: 'Citrus Canker', cases: 9, isCritical: false },
+  ];
+
+  const handleAddField = (newField) => {
+    setFields((prev) => [...prev, newField]);
+    setFarmer((prev) => ({
+      ...prev,
+      acres: parseFloat((prev.acres + newField.acres).toFixed(1))
+    }));
   };
 
-  return (
-    <div className="min-h-screen bg-[#F8F9F5] py-8 sm:py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+  // Farmer Dashboard Layout Content
+  const DashboardCore = (
+    <div className="space-y-5">
+      
+      {/* Photo 2: Farmer Hero Profile Card (Forest Green) */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#1E5137] to-[#164E35] p-5 sm:p-6 text-white shadow-lg border border-emerald-900/40">
+        <div className="absolute -top-24 -right-24 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
         
-        {/* Welcome Header */}
-        <div className="bg-[#0F382A] rounded-2xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-          <div className="space-y-2 max-w-2xl relative z-10">
-            <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-400 text-emerald-950">
-                Farmer Workspace (शेतकरी डॅशबोर्ड)
-              </span>
-              <span className="text-xs text-emerald-300 font-mono">Nashik District · Niphad Taluka</span>
+        <div className="relative z-10">
+          <p className="text-emerald-200/90 text-sm font-medium tracking-wide">
+            Good morning,
+          </p>
+          <h1 className="font-serif-display text-3xl sm:text-4xl font-bold tracking-tight text-white mt-0.5 mb-1.5 drop-shadow-xs">
+            {farmer.name}
+          </h1>
+
+          <div className="flex items-center gap-1.5 text-xs sm:text-sm text-emerald-100/85">
+            <span className="inline-block w-2 h-2 rounded-full bg-rose-400 animate-pulse shadow-xs shadow-rose-400/50" />
+            <MapPin className="w-3.5 h-3.5 text-rose-300 shrink-0" />
+            <span>{farmer.location}</span>
+          </div>
+        </div>
+
+        {/* 4 Stats Grid (2x2) */}
+        <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3.5 relative z-10">
+          <div 
+            onClick={() => onNavigate('diagnosis')}
+            className="rounded-2xl bg-[#245E41]/80 hover:bg-[#245E41] backdrop-blur-xs border border-white/10 p-3.5 transition cursor-pointer group shadow-xs"
+          >
+            <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              {farmer.totalScans}
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              Welcome back, Ramesh Patil (रमेश पाटील)
-            </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-              Managing 2 Active Plots (2.5 Acres Total) · Soil Health Card Valid · Extension Officer: Dilip Shinde
-            </p>
+            <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-100/80 font-medium">
+              <span className="text-xs group-hover:scale-110 transition-transform">📷</span>
+              <span>Total Scans</span>
+            </div>
           </div>
 
+          <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
+            <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center justify-between">
+              <span>{farmer.issuesDetected}</span>
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping opacity-75" />
+            </div>
+            <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200/90 font-medium">
+              <span className="text-xs">⚠️</span>
+              <span>Issues Detected</span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
+            <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              {farmer.resolved}
+            </div>
+            <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-200 font-medium">
+              <span className="text-xs">✅</span>
+              <span>Resolved</span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
+            <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              ₹{farmer.lossPrevented.toLocaleString('en-IN')}
+            </div>
+            <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200 font-medium">
+              <span className="text-xs">💰</span>
+              <span>Loss Prevented</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Photo 2: Weather Risk Card (Terracotta / Amber) */}
+      <div 
+        onClick={() => onNavigate('weather')}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#D4681E] via-[#C8621A] to-[#B25313] p-5 sm:p-6 text-white shadow-lg border border-amber-800/30 cursor-pointer"
+      >
+        <div className="absolute top-0 right-0 w-44 h-44 bg-amber-300/15 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="flex items-center justify-between relative z-10">
+          <span className="text-[11px] font-bold tracking-widest uppercase text-amber-100/90 font-mono">
+            WEATHER RISK
+          </span>
+          <span className="bg-white/25 backdrop-blur-xs border border-white/20 text-white text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow-xs">
+            HIGH
+          </span>
+        </div>
+
+        <div className="mt-3 relative z-10 flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shadow-inner border border-white/30 text-white">
+            <Cloud className="w-7 h-7 text-white fill-white/80 filter drop-shadow-sm" />
+          </div>
+          <div>
+            <h2 className="font-serif-display text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight">
+              Partly Cloudy
+            </h2>
+            <p className="text-xs text-amber-100/90 font-medium">
+              Nashik, Aug 22
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3 relative z-10">
+          <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
+            <div className="text-sm mb-0.5">🌡️</div>
+            <div className="text-base sm:text-lg font-bold text-white leading-tight">32°C</div>
+            <div className="text-[10px] text-amber-100/80 font-medium">Temp</div>
+          </div>
+
+          <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
+            <div className="text-sm mb-0.5">💧</div>
+            <div className="text-base sm:text-lg font-bold text-white leading-tight">78%</div>
+            <div className="text-[10px] text-amber-100/80 font-medium">Humidity</div>
+          </div>
+
+          <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
+            <div className="text-sm mb-0.5">💨</div>
+            <div className="text-base sm:text-lg font-bold text-white leading-tight">12 km/h</div>
+            <div className="text-[10px] text-amber-100/80 font-medium">Wind</div>
+          </div>
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-white/15 flex items-start gap-2 relative z-10">
+          <AlertCircle className="w-4 h-4 text-amber-200 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-50 leading-relaxed font-medium">
+            High humidity favors fungal spread. Inspect crops early morning.
+          </p>
+        </div>
+      </div>
+
+      {/* Photo 3: 4 Quick Actions (2x2 Grid) */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
+        <button
+          onClick={() => onNavigate('diagnosis')}
+          className="group relative overflow-hidden rounded-3xl bg-[#1E5137] hover:bg-[#164E35] p-4 sm:p-5 text-left text-white shadow-md border border-emerald-800/40 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center mb-3 shadow-inner group-hover:scale-110 transition-transform">
+            <Camera className="w-5 h-5 text-white" />
+          </div>
+          <h3 className="font-semibold text-base sm:text-lg text-white leading-tight">
+            Scan Crop
+          </h3>
+          <p className="mt-1 text-xs text-emerald-100/80 line-clamp-1">
+            Upload or capture photo
+          </p>
+          <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+        </button>
+
+        <button
+          onClick={() => onNavigate('hotspots')}
+          className="group relative overflow-hidden rounded-3xl bg-white hover:bg-stone-50/80 p-4 sm:p-5 text-left shadow-sm border border-stone-200/80 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-3 text-lg group-hover:scale-110 transition-transform">
+            🗺️
+          </div>
+          <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
+            Hotspot Map
+          </h3>
+          <p className="mt-1 text-xs text-stone-500 line-clamp-1">
+            3 active alerts nearby
+          </p>
+        </button>
+
+        <button
+          onClick={() => onNavigate('ipm')}
+          className="group relative overflow-hidden rounded-3xl bg-white hover:bg-stone-50/80 p-4 sm:p-5 text-left shadow-sm border border-stone-200/80 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-3 text-lg group-hover:scale-110 transition-transform">
+            📋
+          </div>
+          <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
+            Advisories
+          </h3>
+          <p className="mt-1 text-xs text-stone-500 line-clamp-1">
+            2 new expert guides
+          </p>
+        </button>
+
+        <button
+          onClick={() => setIsLabOpen(true)}
+          className="group relative overflow-hidden rounded-3xl bg-white hover:bg-stone-50/80 p-4 sm:p-5 text-left shadow-sm border border-stone-200/80 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+        >
+          <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-3 text-lg group-hover:scale-110 transition-transform">
+            🔬
+          </div>
+          <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
+            Lab Referral
+          </h3>
+          <p className="mt-1 text-xs text-stone-500 line-clamp-1">
+            Book diagnostics
+          </p>
+        </button>
+      </div>
+
+      {/* Photo 3: Recent Scans */}
+      <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
+        <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+          <h2 className="font-serif-display text-lg font-bold text-stone-900">
+            Recent Scans
+          </h2>
           <button
             onClick={() => onNavigate('diagnosis')}
-            className="bg-[#E6A122] hover:bg-[#D69112] text-[#0A261D] px-6 py-3 rounded-xl text-xs font-bold shadow-lg transition-all flex items-center space-x-2 shrink-0 cursor-pointer"
+            className="text-amber-800 hover:text-amber-900 text-xs sm:text-sm font-semibold transition hover:underline cursor-pointer"
           >
-            <Scan className="w-4 h-4" />
-            <span>Scan Diseased Leaf</span>
+            See all →
           </button>
         </div>
 
-        {/* 2-Column Farmer Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* ========================================================= */}
-          {/* LEFT: Active Plots & Spray Reminders */}
-          {/* ========================================================= */}
-          <div className="lg:col-span-7 space-y-6">
-            
-            {/* My Plots Card */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center space-x-2">
-                  <Sprout className="w-5 h-5 text-emerald-700" />
-                  <h2 className="text-base font-bold text-slate-900">My Registered Plots</h2>
+        <div className="divide-y divide-stone-100">
+          {recentScans.map((scan) => (
+            <div
+              key={scan.id}
+              className="py-3.5 flex items-center justify-between gap-3 group hover:bg-stone-50/50 -mx-2 px-2 rounded-2xl transition"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-stone-200 bg-stone-100 shadow-2xs">
+                  <img
+                    src={scan.image}
+                    alt={scan.crop}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-                <span className="text-xs text-slate-500 font-mono">2 Active Plots</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Plot 1 */}
-                <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span className="font-extrabold text-sm text-slate-900 block">Plot A: Vineyard</span>
-                      <span className="text-[11px] text-slate-500">Thompson Seedless Grapes · 1.5 Acre</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900">
-                      Downy Mildew Alert
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-serif-display font-bold text-stone-900 text-sm sm:text-base truncate">
+                      {scan.disease}
+                    </h4>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      scan.severity === 'High'
+                        ? 'bg-rose-50 text-rose-600 border border-rose-200/80'
+                        : scan.severity === 'Medium'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                    }`}>
+                      {scan.severity}
                     </span>
                   </div>
-                  <div className="text-[11px] text-slate-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Crop Stage:</span>
-                      <span className="font-bold text-slate-800">Berry Development (65 DAP)</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Last Spray:</span>
-                      <span className="font-mono">3 days ago (Bordeaux 1%)</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Plot 2 */}
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span className="font-extrabold text-sm text-slate-900 block">Plot B: Tomato Field</span>
-                      <span className="text-[11px] text-slate-500">Abhinav Hybrid · 1.0 Acre</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                      Healthy
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Crop Stage:</span>
-                      <span className="font-bold text-slate-800">Flowering & Fruit Set</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Last Spray:</span>
-                      <span className="font-mono">7 days ago (Neem Oil)</span>
-                    </div>
-                  </div>
+                  <p className="text-[11px] sm:text-xs text-stone-500 truncate mt-0.5">
+                    {scan.crop} · {scan.confidence}% confidence · {scan.time}
+                  </p>
                 </div>
               </div>
+
+              <button
+                onClick={() => onNavigate('ipm')}
+                className="shrink-0 rounded-full px-3.5 py-1 text-xs font-semibold text-stone-700 bg-white border border-stone-300 hover:border-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/40 transition shadow-2xs cursor-pointer"
+              >
+                Advisory
+              </button>
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Spray Schedule & Today's Reminder */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-5 h-5 text-amber-600" />
-                  <h2 className="text-base font-bold text-slate-900">
-                    Prescribed Treatment & Spray Reminders
-                  </h2>
-                </div>
-                <span className="text-[11px] text-amber-800 font-mono font-bold bg-amber-100 px-2 py-0.5 rounded">
-                  1 Task Pending
-                </span>
-              </div>
-
-              <div className={`p-4 rounded-xl border transition-all ${
-                sprayDone 
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
-                  : 'bg-amber-50/60 border-amber-200 text-amber-950'
-              }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-amber-600" />
-                      <span className="font-bold text-xs">Due Today (Tuesday Morning 07:00 AM)</span>
-                    </div>
-                    <h3 className="font-extrabold text-sm text-slate-900">
-                      Plot A (Grapes): Copper Oxychloride 50% WP (37.5g / 15L Tank)
-                    </h3>
-                    <p className="text-[11px] text-slate-600">
-                      Preventive cover spray against Downy Mildew sporulation. Rain expected in 48 hours.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={handleMarkSprayDone}
-                    disabled={sprayDone}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold shrink-0 transition-all cursor-pointer ${
-                      sprayDone 
-                        ? 'bg-emerald-600 text-white cursor-default' 
-                        : 'bg-[#0F382A] hover:bg-[#164E3A] text-white shadow'
-                    }`}
-                  >
-                    {sprayDone ? '✓ Completed' : 'Mark as Sprayed'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Diagnosis History List */}
-              <div className="space-y-2 pt-2">
-                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                  Past Scans & Ground Validations:
-                </span>
-
-                <div className="space-y-2">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-slate-900">Tomato Late Blight (करपा)</span>
-                      <span className="text-[11px] text-slate-500 block">Scanned on 20 Aug · 94% Confidence</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                      Resolved
-                    </span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-slate-900">Healthy Control Check</span>
-                      <span className="text-[11px] text-slate-500 block">Scanned on 12 Aug · Grade S0</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700">
-                      Archived
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-
-          {/* ========================================================= */}
-          {/* RIGHT: KVK Agronomist Status & Extension Contact */}
-          {/* ========================================================= */}
-          <div className="lg:col-span-5 space-y-6">
-            
-            {/* KVK Ticket Status */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center space-x-2">
-                  <UserCheck className="w-5 h-5 text-emerald-700" />
-                  <h3 className="text-base font-bold text-slate-900">KVK Expert Consultation Desk</h3>
-                </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-900 font-mono">
-                  #KVK-NSK-492
-                </span>
-              </div>
-
-              <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-emerald-900">Assigned Agronomist:</span>
-                  <span className="font-bold text-slate-900">Dr. S. Kulkarni (KVK Nashik)</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Verification Status:</span>
-                  <span className="px-2 py-0.5 rounded bg-emerald-600 text-white font-bold text-[10px]">
-                    Diagnosis Confirmed
-                  </span>
-                </div>
-                <div className="pt-2 border-t border-emerald-200 text-[11px] text-slate-700 leading-relaxed italic">
-                  &ldquo;Symptoms on Plot A confirm early Plasmopara viticola. Maintain 1% Bordeaux mixture schedule and avoid overhead irrigation.&rdquo;
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-1 text-xs">
-                <span className="text-slate-500">Need emergency assistance?</span>
-                <a 
-                  href="tel:1800578744" 
-                  className="text-emerald-700 font-bold hover:underline flex items-center space-x-1"
-                >
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>Call KVK Helpline</span>
-                </a>
-              </div>
-            </div>
-
-            {/* Extension Worker Connect Card */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                Assigned Extension Worker (कृषी सहाय्यक):
-              </span>
-
-              <div className="flex items-center space-x-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="w-10 h-10 rounded-full bg-emerald-800 text-white font-bold flex items-center justify-center">
-                  DS
-                </div>
-                <div className="flex-1 text-xs">
-                  <span className="font-bold text-slate-900 block">Dilip Shinde</span>
-                  <span className="text-slate-500">Niphad Block Extension Officer</span>
-                </div>
-                <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded">
-                  Active in Field
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  onClick={() => alert('Extension Officer Dilip Shinde has been notified. He is scheduled to visit your plot on Thursday.')}
-                  className="py-2.5 bg-[#0F382A] text-white rounded-xl font-bold hover:bg-[#164E3A] transition-colors cursor-pointer text-center"
-                >
-                  Request Field Visit
-                </button>
-                <button
-                  onClick={() => alert('Opening voice advisory message in Marathi...')}
-                  className="py-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl font-bold hover:bg-emerald-100 transition-colors cursor-pointer text-center"
-                >
-                  Audio Advisory
-                </button>
-              </div>
-            </div>
-
-          </div>
-
+      {/* Photos 3 & 4: Nearby Hotspots */}
+      <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
+        <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+          <h2 className="font-serif-display text-lg font-bold text-stone-900">
+            Nearby Hotspots
+          </h2>
+          <button
+            onClick={() => onNavigate('hotspots')}
+            className="rounded-full bg-emerald-50 hover:bg-emerald-100/80 text-[#1E5137] border border-emerald-200/70 text-xs font-semibold px-3 py-1 transition flex items-center gap-1 cursor-pointer"
+          >
+            View Map →
+          </button>
         </div>
 
+        <div className="divide-y divide-stone-100">
+          {hotspots.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => onNavigate('hotspots')}
+              className="py-3 flex items-center justify-between gap-3 group hover:bg-stone-50/70 -mx-2 px-2 rounded-2xl transition cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                    item.isCritical
+                      ? 'bg-rose-500 shadow-xs shadow-rose-500/50'
+                      : 'bg-amber-500 shadow-xs shadow-amber-500/50'
+                  }`}
+                />
+                <div>
+                  <h4 className="font-semibold text-stone-900 text-sm sm:text-base leading-tight group-hover:text-[#1E5137] transition">
+                    {item.district}
+                  </h4>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    {item.disease}
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span
+                  className={`font-bold text-sm sm:text-base ${
+                    item.isCritical ? 'text-rose-600' : 'text-amber-600'
+                  }`}
+                >
+                  {item.cases}
+                </span>
+                <span className="text-[11px] text-stone-400 block -mt-0.5">
+                  cases
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Photos 4 & 5: My Fields */}
+      <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
+        <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+          <h2 className="font-serif-display text-lg font-bold text-stone-900">
+            My Fields
+          </h2>
+          <button
+            onClick={() => setIsAddFieldOpen(true)}
+            className="rounded-full bg-[#1E5137] hover:bg-[#164E35] text-white text-xs font-semibold px-3 py-1.5 transition flex items-center gap-1 shadow-xs cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>+ Add Field</span>
+          </button>
+        </div>
+
+        <div className="divide-y divide-stone-100">
+          {fields.map((field) => (
+            <div key={field.id} className="py-4 first:pt-4 last:pb-1">
+              <div className="relative w-full h-32 sm:h-36 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shadow-2xs">
+                <img
+                  src={field.imageUrl}
+                  alt={field.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                {field.healthScore && (
+                  <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20">
+                    Health: {field.healthScore}%
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-3 flex items-center justify-between">
+                <div>
+                  <h4 className="font-serif-display font-bold text-stone-900 text-base leading-tight">
+                    {field.name}
+                  </h4>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    {field.acres} acres · Last check: {field.lastScanned}
+                  </p>
+                </div>
+                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                  field.status === 'At Risk'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                    : field.status === 'Healthy'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                    : 'bg-orange-50 text-orange-700 border border-orange-200/80'
+                }`}>
+                  {field.status}
+                </span>
+              </div>
+
+              <div className="mt-3">
+                <button
+                  onClick={() => onNavigate('diagnosis')}
+                  className="w-full rounded-full py-2 text-xs font-semibold text-stone-700 bg-white border border-stone-300 hover:border-emerald-600 hover:text-[#1E5137] hover:bg-emerald-50/50 transition duration-150 shadow-2xs cursor-pointer text-center"
+                >
+                  Scan This Field
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Photo 5: Official SIH 2026 & Government of Maharashtra Footer */}
+      <footer className="mt-8 rounded-3xl bg-[#164E35] text-white p-6 sm:p-8 border-t border-emerald-900/50 shadow-inner space-y-6">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-emerald-700/60 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+              <Sprout className="w-5 h-5 text-emerald-300" />
+            </div>
+            <h3 className="font-serif-display text-2xl font-bold tracking-tight text-white">
+              KrishiRakshak
+            </h3>
+          </div>
+          <p className="mt-2.5 text-xs sm:text-sm text-emerald-100/80 leading-relaxed max-w-xl">
+            AI-powered crop health intelligence for Indian farmers. Smart India Hackathon 2026 — Problem #26131.
+          </p>
+        </div>
+
+        <div className="pt-4 border-t border-emerald-800/60">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-300">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>Government of Maharashtra</span>
+          </div>
+          <p className="mt-1 text-xs text-emerald-100/80 leading-relaxed">
+            Maharashtra State Innovation Society, Department of Skills, Employment, Entrepreneurship and Innovation
+          </p>
+        </div>
+
+        <div className="pt-4 border-t border-emerald-800/60">
+          <div className="text-xs font-bold uppercase tracking-wider text-amber-300">
+            Emergency
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <Phone className="w-4 h-4 text-amber-400" />
+            <a
+              href="tel:18001801551"
+              className="font-mono text-sm sm:text-base font-bold text-white hover:text-amber-300 transition tracking-wide"
+            >
+              Kisan Helpline: 1800-180-1551
+            </a>
+          </div>
+          <p className="mt-1 text-xs text-emerald-200/70">
+            Available in Hindi, Marathi, English, Telugu, and 8 more regional languages.
+          </p>
+        </div>
+
+        <div className="pt-4 border-t border-emerald-800/60 text-[11px] text-emerald-300/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
+          <p>© 2026 KrishiRakshak · Smart India Hackathon</p>
+          <p className="text-emerald-300/80 font-medium">Agriculture, FoodTech & Rural Development</p>
+        </div>
+      </footer>
+
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-[#F6F1EA] py-6 sm:py-10">
+      
+      {/* Mobile Device Frame View vs Full Desktop View */}
+      {viewMode === 'mobile' ? (
+        <DeviceFrame>
+          <div className="p-4 bg-[#FAF6F0] min-h-full">
+            {DashboardCore}
+          </div>
+        </DeviceFrame>
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Top Banner */}
+          <div className="mb-6 rounded-2xl bg-gradient-to-r from-[#164E35] to-[#1E5137] text-white p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm border border-emerald-900/30">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest bg-amber-400 text-stone-900 px-2 py-0.5 rounded font-mono">
+                  SIH 2026 #26131
+                </span>
+                <span className="text-xs font-semibold text-emerald-200">
+                  Government of Maharashtra · Maharashtra State Innovation Society
+                </span>
+              </div>
+              <h2 className="font-serif-display text-xl sm:text-2xl font-bold mt-1 tracking-tight">
+                Farmer Workspace & Crop Health Monitoring Hub
+              </h2>
+            </div>
+            <button
+              onClick={() => onNavigate('diagnosis')}
+              className="self-start sm:self-center shrink-0 px-4 py-2 rounded-xl bg-white text-[#164E35] font-bold text-xs hover:bg-emerald-50 transition shadow-xs cursor-pointer"
+            >
+              Scan Diseased Crop →
+            </button>
+          </div>
+
+          {/* 2-Column Responsive Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* Left Column (7 cols) */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Farmer Profile Hero */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#1E5137] to-[#164E35] p-5 sm:p-6 text-white shadow-lg border border-emerald-900/40">
+                <div className="absolute -top-24 -right-24 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative z-10">
+                  <p className="text-emerald-200/90 text-sm font-medium tracking-wide">
+                    Good morning,
+                  </p>
+                  <h1 className="font-serif-display text-3xl sm:text-4xl font-bold tracking-tight text-white mt-0.5 mb-1.5 drop-shadow-xs">
+                    {farmer.name}
+                  </h1>
+                  <div className="flex items-center gap-1.5 text-xs sm:text-sm text-emerald-100/85">
+                    <span className="inline-block w-2 h-2 rounded-full bg-rose-400 animate-pulse shadow-xs shadow-rose-400/50" />
+                    <MapPin className="w-3.5 h-3.5 text-rose-300 shrink-0" />
+                    <span>{farmer.location}</span>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3.5 relative z-10">
+                  <div 
+                    onClick={() => onNavigate('diagnosis')}
+                    className="rounded-2xl bg-[#245E41]/80 hover:bg-[#245E41] backdrop-blur-xs border border-white/10 p-3.5 transition cursor-pointer group shadow-xs"
+                  >
+                    <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                      {farmer.totalScans}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-100/80 font-medium">
+                      <span className="text-xs group-hover:scale-110 transition-transform">📷</span>
+                      <span>Total Scans</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
+                    <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center justify-between">
+                      <span>{farmer.issuesDetected}</span>
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping opacity-75" />
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200/90 font-medium">
+                      <span className="text-xs">⚠️</span>
+                      <span>Issues Detected</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
+                    <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                      {farmer.resolved}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-200 font-medium">
+                      <span className="text-xs">✅</span>
+                      <span>Resolved</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
+                    <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                      ₹{farmer.lossPrevented.toLocaleString('en-IN')}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200 font-medium">
+                      <span className="text-xs">💰</span>
+                      <span>Loss Prevented</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 Quick Action Cards */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
+                <button
+                  onClick={() => onNavigate('diagnosis')}
+                  className="group relative overflow-hidden rounded-3xl bg-[#1E5137] hover:bg-[#164E35] p-4 sm:p-5 text-left text-white shadow-md border border-emerald-800/40 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center mb-3 shadow-inner group-hover:scale-110 transition-transform">
+                    <Camera className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-base sm:text-lg text-white leading-tight">
+                    Scan Crop
+                  </h3>
+                  <p className="mt-1 text-xs text-emerald-100/80 line-clamp-1">
+                    Upload or capture photo
+                  </p>
+                  <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                </button>
+
+                <button
+                  onClick={() => onNavigate('hotspots')}
+                  className="group relative overflow-hidden rounded-3xl bg-white hover:bg-stone-50/80 p-4 sm:p-5 text-left shadow-sm border border-stone-200/80 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-3 text-lg group-hover:scale-110 transition-transform">
+                    🗺️
+                  </div>
+                  <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
+                    Hotspot Map
+                  </h3>
+                  <p className="mt-1 text-xs text-stone-500 line-clamp-1">
+                    3 active alerts nearby
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => onNavigate('ipm')}
+                  className="group relative overflow-hidden rounded-3xl bg-white hover:bg-stone-50/80 p-4 sm:p-5 text-left shadow-sm border border-stone-200/80 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center mb-3 text-lg group-hover:scale-110 transition-transform">
+                    📋
+                  </div>
+                  <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
+                    Advisories
+                  </h3>
+                  <p className="mt-1 text-xs text-stone-500 line-clamp-1">
+                    2 new expert guides
+                  </p>
+                </button>
+
+                <button
+                  onClick={() => setIsLabOpen(true)}
+                  className="group relative overflow-hidden rounded-3xl bg-white hover:bg-stone-50/80 p-4 sm:p-5 text-left shadow-sm border border-stone-200/80 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-2xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-3 text-lg group-hover:scale-110 transition-transform">
+                    🔬
+                  </div>
+                  <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
+                    Lab Referral
+                  </h3>
+                  <p className="mt-1 text-xs text-stone-500 line-clamp-1">
+                    Book diagnostics
+                  </p>
+                </button>
+              </div>
+
+              {/* My Fields Section */}
+              <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
+                <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                  <h2 className="font-serif-display text-lg font-bold text-stone-900">
+                    My Fields
+                  </h2>
+                  <button
+                    onClick={() => setIsAddFieldOpen(true)}
+                    className="rounded-full bg-[#1E5137] hover:bg-[#164E35] text-white text-xs font-semibold px-3 py-1.5 transition flex items-center gap-1 shadow-xs cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>+ Add Field</span>
+                  </button>
+                </div>
+
+                <div className="divide-y divide-stone-100">
+                  {fields.map((field) => (
+                    <div key={field.id} className="py-4 first:pt-4 last:pb-1">
+                      <div className="relative w-full h-32 sm:h-36 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shadow-2xs">
+                        <img
+                          src={field.imageUrl}
+                          alt={field.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                        {field.healthScore && (
+                          <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/20">
+                            Health: {field.healthScore}%
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <div>
+                          <h4 className="font-serif-display font-bold text-stone-900 text-base leading-tight">
+                            {field.name}
+                          </h4>
+                          <p className="text-xs text-stone-500 mt-0.5">
+                            {field.acres} acres · Last check: {field.lastScanned}
+                          </p>
+                        </div>
+                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                          field.status === 'At Risk'
+                            ? 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                            : field.status === 'Healthy'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                            : 'bg-orange-50 text-orange-700 border border-orange-200/80'
+                        }`}>
+                          {field.status}
+                        </span>
+                      </div>
+
+                      <div className="mt-3">
+                        <button
+                          onClick={() => onNavigate('diagnosis')}
+                          className="w-full rounded-full py-2 text-xs font-semibold text-stone-700 bg-white border border-stone-300 hover:border-emerald-600 hover:text-[#1E5137] hover:bg-emerald-50/50 transition duration-150 shadow-2xs cursor-pointer text-center"
+                        >
+                          Scan This Field
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Column (5 cols) */}
+            <div className="lg:col-span-5 space-y-6">
+              
+              {/* Weather Risk Card */}
+              <div 
+                onClick={() => onNavigate('weather')}
+                className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#D4681E] via-[#C8621A] to-[#B25313] p-5 sm:p-6 text-white shadow-lg border border-amber-800/30 cursor-pointer"
+              >
+                <div className="absolute top-0 right-0 w-44 h-44 bg-amber-300/15 rounded-full blur-2xl pointer-events-none" />
+
+                <div className="flex items-center justify-between relative z-10">
+                  <span className="text-[11px] font-bold tracking-widest uppercase text-amber-100/90 font-mono">
+                    WEATHER RISK
+                  </span>
+                  <span className="bg-white/25 backdrop-blur-xs border border-white/20 text-white text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow-xs">
+                    HIGH
+                  </span>
+                </div>
+
+                <div className="mt-3 relative z-10 flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center shadow-inner border border-white/30 text-white">
+                    <Cloud className="w-7 h-7 text-white fill-white/80 filter drop-shadow-sm" />
+                  </div>
+                  <div>
+                    <h2 className="font-serif-display text-2xl sm:text-3xl font-bold tracking-tight text-white leading-tight">
+                      Partly Cloudy
+                    </h2>
+                    <p className="text-xs text-amber-100/90 font-medium">
+                      Nashik, Aug 22
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3 relative z-10">
+                  <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
+                    <div className="text-sm mb-0.5">🌡️</div>
+                    <div className="text-base sm:text-lg font-bold text-white leading-tight">32°C</div>
+                    <div className="text-[10px] text-amber-100/80 font-medium">Temp</div>
+                  </div>
+
+                  <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
+                    <div className="text-sm mb-0.5">💧</div>
+                    <div className="text-base sm:text-lg font-bold text-white leading-tight">78%</div>
+                    <div className="text-[10px] text-amber-100/80 font-medium">Humidity</div>
+                  </div>
+
+                  <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
+                    <div className="text-sm mb-0.5">💨</div>
+                    <div className="text-base sm:text-lg font-bold text-white leading-tight">12 km/h</div>
+                    <div className="text-[10px] text-amber-100/80 font-medium">Wind</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/15 flex items-start gap-2 relative z-10">
+                  <AlertCircle className="w-4 h-4 text-amber-200 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-50 leading-relaxed font-medium">
+                    High humidity favors fungal spread. Inspect crops early morning.
+                  </p>
+                </div>
+              </div>
+
+              {/* Recent Scans */}
+              <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
+                <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                  <h2 className="font-serif-display text-lg font-bold text-stone-900">
+                    Recent Scans
+                  </h2>
+                  <button
+                    onClick={() => onNavigate('diagnosis')}
+                    className="text-amber-800 hover:text-amber-900 text-xs sm:text-sm font-semibold transition hover:underline cursor-pointer"
+                  >
+                    See all →
+                  </button>
+                </div>
+
+                <div className="divide-y divide-stone-100">
+                  {recentScans.map((scan) => (
+                    <div
+                      key={scan.id}
+                      className="py-3.5 flex items-center justify-between gap-3 group hover:bg-stone-50/50 -mx-2 px-2 rounded-2xl transition"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-stone-200 bg-stone-100 shadow-2xs">
+                          <img
+                            src={scan.image}
+                            alt={scan.crop}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-serif-display font-bold text-stone-900 text-sm sm:text-base truncate">
+                              {scan.disease}
+                            </h4>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              scan.severity === 'High'
+                                ? 'bg-rose-50 text-rose-600 border border-rose-200/80'
+                                : scan.severity === 'Medium'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                                : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                            }`}>
+                              {scan.severity}
+                            </span>
+                          </div>
+                          <p className="text-[11px] sm:text-xs text-stone-500 truncate mt-0.5">
+                            {scan.crop} · {scan.confidence}% confidence · {scan.time}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => onNavigate('ipm')}
+                        className="shrink-0 rounded-full px-3.5 py-1 text-xs font-semibold text-stone-700 bg-white border border-stone-300 hover:border-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/40 transition shadow-2xs cursor-pointer"
+                      >
+                        Advisory
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nearby Hotspots */}
+              <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
+                <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+                  <h2 className="font-serif-display text-lg font-bold text-stone-900">
+                    Nearby Hotspots
+                  </h2>
+                  <button
+                    onClick={() => onNavigate('hotspots')}
+                    className="rounded-full bg-emerald-50 hover:bg-emerald-100/80 text-[#1E5137] border border-emerald-200/70 text-xs font-semibold px-3 py-1 transition flex items-center gap-1 cursor-pointer"
+                  >
+                    View Map →
+                  </button>
+                </div>
+
+                <div className="divide-y divide-stone-100">
+                  {hotspots.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => onNavigate('hotspots')}
+                      className="py-3 flex items-center justify-between gap-3 group hover:bg-stone-50/70 -mx-2 px-2 rounded-2xl transition cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                            item.isCritical
+                              ? 'bg-rose-500 shadow-xs shadow-rose-500/50'
+                              : 'bg-amber-500 shadow-xs shadow-amber-500/50'
+                          }`}
+                        />
+                        <div>
+                          <h4 className="font-semibold text-stone-900 text-sm sm:text-base leading-tight group-hover:text-[#1E5137] transition">
+                            {item.district}
+                          </h4>
+                          <p className="text-xs text-stone-500 mt-0.5">
+                            {item.disease}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span
+                          className={`font-bold text-sm sm:text-base ${
+                            item.isCritical ? 'text-rose-600' : 'text-amber-600'
+                          }`}
+                        >
+                          {item.cases}
+                        </span>
+                        <span className="text-[11px] text-stone-400 block -mt-0.5">
+                          cases
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Official Footer */}
+          <footer className="mt-8 rounded-3xl bg-[#164E35] text-white p-6 sm:p-8 border-t border-emerald-900/50 shadow-inner space-y-6">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-emerald-700/60 border border-emerald-400/30 flex items-center justify-center text-emerald-300">
+                  <Sprout className="w-5 h-5 text-emerald-300" />
+                </div>
+                <h3 className="font-serif-display text-2xl font-bold tracking-tight text-white">
+                  KrishiRakshak
+                </h3>
+              </div>
+              <p className="mt-2.5 text-xs sm:text-sm text-emerald-100/80 leading-relaxed max-w-xl">
+                AI-powered crop health intelligence for Indian farmers. Smart India Hackathon 2026 — Problem #26131.
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-emerald-800/60">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-300">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Government of Maharashtra</span>
+              </div>
+              <p className="mt-1 text-xs text-emerald-100/80 leading-relaxed">
+                Maharashtra State Innovation Society, Department of Skills, Employment, Entrepreneurship and Innovation
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-emerald-800/60">
+              <div className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                Emergency
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <Phone className="w-4 h-4 text-amber-400" />
+                <a
+                  href="tel:18001801551"
+                  className="font-mono text-sm sm:text-base font-bold text-white hover:text-amber-300 transition tracking-wide"
+                >
+                  Kisan Helpline: 1800-180-1551
+                </a>
+              </div>
+              <p className="mt-1 text-xs text-emerald-200/70">
+                Available in Hindi, Marathi, English, Telugu, and 8 more regional languages.
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-emerald-800/60 text-[11px] text-emerald-300/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1">
+              <p>© 2026 KrishiRakshak · Smart India Hackathon</p>
+              <p className="text-emerald-300/80 font-medium">Agriculture, FoodTech & Rural Development</p>
+            </div>
+          </footer>
+
+        </div>
+      )}
+
+      {/* Floating Mode Switcher Button [ 📰 Website | 📱 Mobile ] */}
+      <FloatingViewToggle
+        viewMode={viewMode}
+        onToggle={setViewMode}
+      />
+
+      {/* Interactive Modals */}
+      <LabReferralModal
+        isOpen={isLabOpen}
+        onClose={() => setIsLabOpen(false)}
+      />
+
+      <AddFieldModal
+        isOpen={isAddFieldOpen}
+        onClose={() => setIsAddFieldOpen(false)}
+        onAddField={handleAddField}
+      />
+
     </div>
   );
 };
-

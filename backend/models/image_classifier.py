@@ -1,135 +1,119 @@
 """
 Plant & Crop Disease Classifier Engine
-Supports PyTorch ResNet9 Complete Checkpoint & Pretrained ResNet18 Transfer Learning Models
+Powered exclusively by PyTorch EfficientNet-B0 (38 Classes)
+ImageNet-1K Preprocessing: 224x224, Normalized, Eval Mode, Genuine Grad-CAM
 """
 
 import os
 import io
 import sys
 import base64
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms, models
 from PIL import Image
 
-try:
-    import cv2
-    import numpy as np
-    HAS_CV2 = True
-except ImportError:
-    HAS_CV2 = False
-
-from config import ALL_CLASSES, SAVED_MODELS_DIR
+from config import ALL_CLASSES, EFFICIENTNET_CHECKPOINT_PATH, PREPROCESSING_CONFIG
 
 
-# ============================================================
-# RESNET-9 CONVOLUTIONAL BLOCK & ARCHITECTURE
-# ============================================================
-def conv_block(in_channels, out_channels, pool=False):
-    layers = [
-        nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True)
-    ]
-    if pool:
-        layers.append(nn.MaxPool2d(2))
-    return nn.Sequential(*layers)
+def parse_class_name(class_key: str):
+    """Parses unified class key into human-readable crop and disease names."""
+    if "___" in class_key:
+        parts = class_key.split("___")
+        crop = parts[0].replace("_", " ").replace("(maize)", "").strip().title()
+        disease = parts[1].replace("_", " ").strip().title()
+    else:
+        crop = "Crop Leaf"
+        disease = class_key.replace("_", " ").title()
 
+    if "healthy" in disease.lower():
+        disease_title = f"Healthy {crop}"
+    else:
+        disease_title = disease
 
-class ResNet9(nn.Module):
-    def __init__(self, in_channels=3, num_classes=38):
-        super().__init__()
-        self.conv1 = conv_block(in_channels, 64)
-        self.conv2 = conv_block(64, 128, pool=True)
-        self.res1 = nn.Sequential(conv_block(128, 128), conv_block(128, 128))
-        self.conv3 = conv_block(128, 256, pool=True)
-        self.conv4 = conv_block(256, 512, pool=True)
-        self.res2 = nn.Sequential(conv_block(512, 512), conv_block(512, 512))
-        self.classifier = nn.Sequential(
-            nn.MaxPool2d(4),
-            nn.Flatten(),
-            nn.Linear(512, num_classes)
-        )
-
-    def forward(self, xb):
-        out = self.conv1(xb)
-        out = self.conv2(out)
-        out = out + self.res1(out)
-        out = self.conv3(out)
-        out = self.conv4(out)
-        out = out + self.res2(out)
-        out = self.classifier(out)
-        return out
-
-
-# Register ResNet9 to sys.modules['__main__'] to enable unpickling complete model files
-sys.modules['__main__'].ResNet9 = ResNet9
+    return crop, disease_title
 
 
 class CropDiseaseClassifier:
-    """Multi-Model Crop Disease Classifier supporting ResNet9 & ResNet18."""
+    """Production Crop Disease Classifier using frozen EfficientNet-B0 checkpoint."""
 
     def __init__(self, model_path=None):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.classes = ALL_CLASSES
-        self.model = None
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        elif torch.backends.mps.is_available():
+            self.device = torch.device("mps")
+        else:
+            self.device = torch.device("cpu")
 
-        # Standard 256x256 Image Transform matching PlantVillage Training Pipeline
+        self.classes = list(ALL_CLASSES)
+        self.model = None
+        self.checkpoint_path = None
+
+        # Production Preprocessing Matching Evaluation: Resize(256) -> CenterCrop(224) -> ToTensor() -> ImageNet Normalization
         self.transform = transforms.Compose([
-            transforms.Resize((256, 256)),
-            transforms.ToTensor()
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=PREPROCESSING_CONFIG["mean"],
+                std=PREPROCESSING_CONFIG["std"]
+            )
         ])
 
         self._load_model(model_path)
+        self._verify_startup()
 
     def _load_model(self, model_path=None):
-        candidate_paths = [
-            model_path,
-            os.path.join("models", "plant-disease-model-complete.pth"),
-            os.path.join(SAVED_MODELS_DIR, "plant-disease-model-complete.pth"),
-            os.path.join("models", "plant-disease-model-resnet18.pth"),
-            os.path.join(SAVED_MODELS_DIR, "plant-disease-model-resnet18.pth")
-        ]
+        target_path = model_path or EFFICIENTNET_CHECKPOINT_PATH
 
-        target_path = None
-        for p in candidate_paths:
-            if p and os.path.exists(p):
-                target_path = p
-                break
+        if not os.path.exists(target_path):
+            raise FileNotFoundError(
+                f"[FATAL] EfficientNet-B0 checkpoint not found at: {target_path}\n"
+                f"Cannot proceed with inference. ResNet fallback is disabled."
+            )
 
-        if target_path:
-            try:
-                loaded = torch.load(target_path, map_location=self.device, weights_only=False)
-                
-                if isinstance(loaded, nn.Module):
-                    self.model = loaded
-                    print(f"🔥 [PyTorch] Successfully loaded complete model object from {target_path}")
-                elif isinstance(loaded, dict):
-                    if "class_names" in loaded:
-                        self.classes = loaded["class_names"]
-                    
-                    if loaded.get("model_name") == "resnet18":
-                        self.model = models.resnet18(weights=None)
-                        self.model.fc = nn.Linear(self.model.fc.in_features, len(self.classes))
-                    else:
-                        self.model = ResNet9(3, len(self.classes))
+        print(f"📦 [PyTorch] Loading EfficientNet-B0 checkpoint: {target_path} on {self.device}...")
+        checkpoint = torch.load(target_path, map_location="cpu", weights_only=False)
 
-                    state_dict = loaded.get("model_state_dict", loaded)
-                    self.model.load_state_dict(state_dict)
-                    print(f"🔥 [PyTorch] Successfully loaded model state dict from {target_path}")
-            except Exception as e:
-                print(f"⚠️ [PyTorch] Warning loading model ({e}). Using initialized architecture.")
+        # Confirm 38-class mapping from checkpoint
+        if "class_to_idx" in checkpoint:
+            class_to_idx = checkpoint["class_to_idx"]
+            idx_to_class = {v: k for k, v in class_to_idx.items()}
+            self.classes = [idx_to_class[i] for i in range(len(idx_to_class))]
+            assert len(self.classes) == 38, f"Expected 38 classes, found {len(self.classes)}"
 
-        if self.model is None:
-            self.model = ResNet9(3, len(self.classes))
+        # Instantiate torchvision EfficientNet-B0
+        self.model = models.efficientnet_b0(weights=None)
+        in_features = self.model.classifier[1].in_features
+        self.model.classifier = nn.Sequential(
+            nn.Dropout(p=0.2, inplace=True),
+            nn.Linear(in_features, len(self.classes))
+        )
+
+        state_dict = checkpoint.get("model_state_dict", checkpoint)
+        load_result = self.model.load_state_dict(state_dict, strict=True)
+        print(f"✅ [PyTorch] Checkpoint loaded successfully: {load_result}")
 
         self.model.to(self.device)
         self.model.eval()
+        self.checkpoint_path = target_path
 
-    def predict(self, image_input, crop_hint=None):
+    def _verify_startup(self):
+        """Validates that model is in eval mode and produces (1, 38) logits."""
+        assert self.model is not None, "Model failed to initialize."
+        assert not self.model.training, "Model is not in eval() mode."
+        with torch.no_grad():
+            dummy = torch.zeros((1, 3, 224, 224), device=self.device)
+            out = self.model(dummy)
+            assert out.shape == (1, 38), f"Expected output shape (1, 38), got {out.shape}"
+        print(f"🚀 [PyTorch] EfficientNet-B0 startup check verified (38 classes, eval mode, {self.device}).")
+
+    def predict(self, image_input, crop_hint=None, generate_cam=True):
         """
-        Takes PIL Image, bytes, or file path and returns predicted disease, confidence, top-5 probabilities, and Grad-CAM.
+        Runs deterministic EfficientNet-B0 inference on image_input (bytes, path, or PIL.Image).
+        Returns predicted disease class, softmax confidence, top-5 probabilities, and genuine Grad-CAM.
         """
         if isinstance(image_input, bytes):
             image = Image.open(io.BytesIO(image_input)).convert("RGB")
@@ -138,65 +122,126 @@ class CropDiseaseClassifier:
         elif isinstance(image_input, Image.Image):
             image = image_input.convert("RGB")
         else:
-            raise ValueError("Unsupported image input type.")
+            raise ValueError(f"Unsupported image input type: {type(image_input)}")
 
         tensor = self.transform(image).unsqueeze(0).to(self.device)
 
+        # 1. Primary Model Prediction with torch.no_grad()
         with torch.no_grad():
             outputs = self.model(tensor)
             probs = F.softmax(outputs, dim=1)[0]
 
         topk_probs, topk_indices = torch.topk(probs, min(5, len(self.classes)))
-        
-        top_idx = topk_indices[0].item()
-        top_prob = topk_probs[0].item()
-        predicted_class = self.classes[top_idx]
 
-        # Top-5 Prediction dictionary with exact probability percentages
+        top_idx = topk_indices[0].item()
+        top_prob = float(topk_probs[0].item())
+        predicted_class = self.classes[top_idx]
+        crop_name, disease_name = parse_class_name(predicted_class)
+
+        # Build Top-5 Predictions with exact softmax percentages
         top5_predictions = {}
         top5_list = []
         for i in range(len(topk_indices)):
             idx_val = topk_indices[i].item()
-            prob_val = round(topk_probs[i].item() * 100, 2)
-            disease_name = self.classes[idx_val]
-            top5_predictions[disease_name] = f"{prob_val}%"
+            prob_val = round(float(topk_probs[i].item()) * 100, 2)
+            cls_name = self.classes[idx_val]
+            c_name, d_name = parse_class_name(cls_name)
+            top5_predictions[cls_name] = f"{prob_val}%"
             top5_list.append({
                 "class_index": idx_val,
-                "disease": disease_name,
+                "unified_class": cls_name,
+                "crop": c_name,
+                "disease": d_name,
                 "confidence": prob_val
             })
 
-        heatmap_b64 = self.generate_gradcam(image, tensor)
+        # 2. Genuine Gradient-Based Grad-CAM Generation
+        heatmap_b64 = ""
+        if generate_cam:
+            heatmap_b64 = self.generate_gradcam(image, tensor, top_idx)
 
         return {
             "predicted_class": predicted_class,
-            "confidence": round(float(top_prob), 4),
+            "crop": crop_name,
+            "disease": disease_name,
+            "confidence": round(top_prob, 4),
+            "confidence_percent": f"{round(top_prob * 100, 2)}%",
             "is_healthy": "healthy" in predicted_class.lower(),
             "top5_predictions": top5_predictions,
             "top5_list": top5_list,
             "heatmap_base64": heatmap_b64,
-            "model_version": "v4.0-resnet-complete"
+            "model_architecture": "EfficientNet-B0",
+            "checkpoint_path": self.checkpoint_path
         }
 
-    def predict_debug(self, image_input, top_n=10):
-        """Debug helper method requested for terminal inspection."""
-        res = self.predict(image_input)
-        return res["top5_list"]
-
-    def generate_gradcam(self, original_image, input_tensor):
-        """Generates visual activation heatmap overlay using OpenCV."""
+    def generate_gradcam(self, original_image: Image.Image, input_tensor: torch.Tensor, target_class_idx: int) -> str:
+        """
+        Generates genuine gradient-weighted class activation mapping (Grad-CAM).
+        Hooks the final convolutional feature layer of EfficientNet-B0 (model.features[-1]).
+        """
         try:
-            if HAS_CV2:
-                img_np = np.array(original_image.resize((224, 224)))
-                gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-                heatmap = cv2.applyColorMap(cv2.GaussianBlur(gray, (15, 15), 0), cv2.COLORMAP_JET)
-                overlay = cv2.addWeighted(img_np, 0.6, heatmap, 0.4, 0)
-                _, buffer = cv2.imencode('.jpg', cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR))
-                return base64.b64encode(buffer).decode('utf-8')
-        except Exception:
-            pass
-        return ""
+            target_layer = self.model.features[-1]
+            activations = None
+            gradients = None
+
+            def forward_hook(module, inp, outp):
+                nonlocal activations
+                activations = outp
+
+            def backward_hook(module, grad_in, grad_out):
+                nonlocal gradients
+                gradients = grad_out[0]
+
+            handle_fwd = target_layer.register_forward_hook(forward_hook)
+            handle_bwd = target_layer.register_full_backward_hook(backward_hook)
+
+            # Grad-CAM requires gradient tracking through target convolutional features
+            x = input_tensor.clone().detach().requires_grad_(True)
+            self.model.zero_grad()
+            output = self.model(x)
+            target_score = output[0, target_class_idx]
+            target_score.backward()
+
+            handle_fwd.remove()
+            handle_bwd.remove()
+
+            if activations is None or gradients is None:
+                return ""
+
+            # Global average pooling of gradients over spatial dimensions (H, W)
+            weights = torch.mean(gradients, dim=(2, 3), keepdim=True)
+            cam = torch.sum(weights * activations.detach(), dim=1).squeeze()
+            cam = F.relu(cam)
+
+            cam_max = torch.max(cam)
+            if cam_max > 0:
+                cam = cam / cam_max
+
+            cam_np = cam.cpu().numpy().astype(np.float32)
+
+            # Resize CAM to original image size
+            orig_w, orig_h = original_image.size
+            cam_img = Image.fromarray((cam_np * 255).astype(np.uint8)).resize((orig_w, orig_h), resample=Image.BILINEAR)
+            cam_norm = np.array(cam_img).astype(np.float32) / 255.0
+
+            # Jet colormap formula in pure NumPy
+            r = np.clip(1.5 - np.abs(4.0 * cam_norm - 3.0), 0.0, 1.0)
+            g = np.clip(1.5 - np.abs(4.0 * cam_norm - 2.0), 0.0, 1.0)
+            b = np.clip(1.5 - np.abs(4.0 * cam_norm - 1.0), 0.0, 1.0)
+            heatmap_rgb = (np.stack([r, g, b], axis=-1) * 255).astype(np.uint8)
+
+            orig_rgb = np.array(original_image.convert("RGB"))
+            overlay = (orig_rgb * 0.55 + heatmap_rgb * 0.45).astype(np.uint8)
+
+            out_img = Image.fromarray(overlay)
+            buf = io.BytesIO()
+            out_img.save(buf, format="JPEG", quality=85)
+            return base64.b64encode(buf.getvalue()).decode("utf-8")
+
+        except Exception as e:
+            print(f"⚠️ [Grad-CAM Warning] Grad-CAM generation encountered an error: {e}")
+            return ""
 
 
-# Alias for compatibility
+# Compatibility aliases
 PlantDiseaseClassifier = CropDiseaseClassifier

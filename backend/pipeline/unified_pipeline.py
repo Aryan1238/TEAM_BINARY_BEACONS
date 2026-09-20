@@ -63,10 +63,12 @@ class UnifiedCropHealthPipeline:
         # Step 5: Geospatial Hotspot Check
         spatial_analysis = self.hotspot_analyzer.analyze_hotspots()
         nearby_cluster_alert = None
-        for cluster in spatial_analysis["clusters"]:
-            # Simple distance approximation
-            dlat = abs(cluster["center_lat"] - latitude)
-            dlon = abs(cluster["center_lon"] - longitude)
+        for cluster in spatial_analysis.get("clusters", []):
+            # Distance approximation to nearby outbreak clusters
+            c_lat = cluster.get("center_lat") or cluster.get("lat") or 0.0
+            c_lon = cluster.get("center_lon") or cluster.get("lng") or 0.0
+            dlat = abs(c_lat - latitude)
+            dlon = abs(c_lon - longitude)
             if dlat < 0.3 and dlon < 0.3:
                 nearby_cluster_alert = cluster
                 break

@@ -31,7 +31,6 @@ export const WeatherRiskPredictor = ({ currentLang, onNavigate, onSelectDiseaseF
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeModelTab, setActiveModelTab] = useState('blitecast');
   const [isGpsActive, setIsGpsActive] = useState(false);
 
   // Fetch live weather data
