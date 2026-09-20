@@ -135,16 +135,31 @@ EFFICIENTNET_TO_APPLICATION_TAXONOMY = {
 }
 
 # EfficientNet-B0 Model Checkpoint Path (100% Controlled Leakage-Safe Checkpoint)
-EFFICIENTNET_CHECKPOINT_PATH = os.environ.get(
-    "EFFICIENTNET_CHECKPOINT_PATH",
-    os.path.abspath(os.path.join(BASE_DIR, "..", "..", "models", "efficientnet_b0", "100pct_leakage_safe_experiment", "best_model_100pct_leakage_safe.pth"))
-)
+def _resolve_checkpoint_path():
+    env_path = os.environ.get("EFFICIENTNET_CHECKPOINT_PATH")
+    if env_path and os.path.exists(env_path):
+        return os.path.abspath(env_path)
+    repo_model_path = os.path.abspath(os.path.join(BASE_DIR, "..", "models", "efficientnet_b0", "100pct_leakage_safe_experiment", "best_model_100pct_leakage_safe.pth"))
+    if os.path.exists(repo_model_path):
+        return repo_model_path
+    scratch_model_path = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "models", "efficientnet_b0", "100pct_leakage_safe_experiment", "best_model_100pct_leakage_safe.pth"))
+    if os.path.exists(scratch_model_path):
+        return scratch_model_path
+    return repo_model_path
+
+EFFICIENTNET_CHECKPOINT_PATH = _resolve_checkpoint_path()
 
 # Rollback Checkpoint Path (70% Leakage-Safe Baseline Checkpoint)
-EFFICIENTNET_ROLLBACK_CHECKPOINT_PATH = os.environ.get(
-    "EFFICIENTNET_ROLLBACK_CHECKPOINT_PATH",
-    os.path.abspath(os.path.join(BASE_DIR, "..", "..", "models", "efficientnet_b0", "70pct_leakage_safe_experiment", "best_model_70pct_leakage_safe.pth"))
-)
+def _resolve_rollback_path():
+    env_path = os.environ.get("EFFICIENTNET_ROLLBACK_CHECKPOINT_PATH")
+    if env_path and os.path.exists(env_path):
+        return os.path.abspath(env_path)
+    repo_path = os.path.abspath(os.path.join(BASE_DIR, "..", "models", "efficientnet_b0", "70pct_leakage_safe_experiment", "best_model_70pct_leakage_safe.pth"))
+    if os.path.exists(repo_path):
+        return repo_path
+    return os.path.abspath(os.path.join(BASE_DIR, "..", "..", "models", "efficientnet_b0", "70pct_leakage_safe_experiment", "best_model_70pct_leakage_safe.pth"))
+
+EFFICIENTNET_ROLLBACK_CHECKPOINT_PATH = _resolve_rollback_path()
 
 # Production Preprocessing Matching EfficientNet-B0 Evaluation Pipeline:
 # Resize(256) -> CenterCrop(224) -> ToTensor() -> ImageNet Normalization

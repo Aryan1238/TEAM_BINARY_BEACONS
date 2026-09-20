@@ -63,9 +63,29 @@ app = FastAPI(
     version="5.0.0"
 )
 
+# Production & Local Allowed Origins for CORS
+DEFAULT_ALLOWED_ORIGINS = [
+    "https://aryan1238.github.io",
+    "https://krushiraksha.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000"
+]
+
+env_origins = os.getenv("ALLOWED_ORIGINS", "")
+if env_origins:
+    custom_origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+    ALLOWED_ORIGINS = list(set(DEFAULT_ALLOWED_ORIGINS + custom_origins))
+else:
+    ALLOWED_ORIGINS = DEFAULT_ALLOWED_ORIGINS
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.github\.io|https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

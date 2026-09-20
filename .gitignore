@@ -25,6 +25,7 @@ dist-ssr
 
 .vercel
 .env*
+!.env.example
 
 # Datasets and Benchmark Artifacts
 dataset/
@@ -46,3 +47,4 @@ ENV/
 *.pt
 *.onnx
 *.wasm
+!models/efficientnet_b0/100pct_leakage_safe_experiment/best_model_100pct_leakage_safe.pth
