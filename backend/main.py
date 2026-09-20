@@ -6,6 +6,7 @@ from PIL import Image
 from dotenv import load_dotenv
 
 import io
+import gc
 import os
 import sys
 import json
@@ -302,9 +303,9 @@ async def analyze_crop(file: UploadFile = File(...)):
         confidence_pct = visual_diag["confidence_percent"]
         predicted_class_key = visual_diag["predicted_class"]
 
-        # Step 3: Run Weather-based Risk & IPM Engine
+        # Step 3: Run Weather-based Risk & IPM Engine (pass precomputed_diagnosis to eliminate duplicate forward pass)
         ml_res = ml_pipeline.process_full_diagnosis(
-            image_input=image_bytes,
+            precomputed_diagnosis=visual_diag,
             crop_name=crop_name.lower(),
             growth_stage="flowering",
             temperature=28.5,
@@ -343,7 +344,7 @@ async def analyze_crop(file: UploadFile = File(...)):
 
         width, height = pil_img.size
 
-        return {
+        response_payload = {
             "success": True,
             "message": "Crop image analyzed successfully by PyTorch EfficientNet-B0 Engine.",
             "validation_status": "PASSED",
@@ -373,8 +374,15 @@ async def analyze_crop(file: UploadFile = File(...)):
             }
         }
 
+        # Explicitly free memory
+        del image_bytes, pil_img, visual_diag, ml_res
+        gc.collect()
+
+        return response_payload
+
     except Exception as e:
         print("CROP ANALYSIS ERROR:", e)
+        gc.collect()
         return {
             "success": False,
             "error_code": "INFERENCE_ERROR",
@@ -395,8 +403,11 @@ async def ml_diagnose_image(
     try:
         contents = await file.read()
         res = ml_pipeline.image_classifier.predict(contents, crop_hint=crop_name)
+        del contents
+        gc.collect()
         return {"status": "success", "diagnosis": res}
     except Exception as e:
+        gc.collect()
         raise HTTPException(status_code=500, detail=str(e))
 
 

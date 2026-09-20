@@ -6,6 +6,7 @@ ImageNet-1K Preprocessing: 224x224, Normalized, Eval Mode, Genuine Grad-CAM
 
 import os
 import io
+import gc
 import sys
 import base64
 import numpy as np
@@ -40,7 +41,10 @@ class CropDiseaseClassifier:
     """Production Crop Disease Classifier using frozen EfficientNet-B0 checkpoint."""
 
     def __init__(self, model_path=None):
-        if torch.cuda.is_available():
+        force_cpu = os.getenv("FORCE_CPU", "0") == "1"
+        if force_cpu:
+            self.device = torch.device("cpu")
+        elif torch.cuda.is_available():
             self.device = torch.device("cuda")
         elif torch.backends.mps.is_available():
             self.device = torch.device("mps")
@@ -104,10 +108,12 @@ class CropDiseaseClassifier:
         """Validates that model is in eval mode and produces (1, 38) logits."""
         assert self.model is not None, "Model failed to initialize."
         assert not self.model.training, "Model is not in eval() mode."
-        with torch.no_grad():
+        with torch.inference_mode():
             dummy = torch.zeros((1, 3, 224, 224), device=self.device)
             out = self.model(dummy)
             assert out.shape == (1, 38), f"Expected output shape (1, 38), got {out.shape}"
+            del dummy, out
+        gc.collect()
         print(f"🚀 [PyTorch] EfficientNet-B0 startup check verified (38 classes, eval mode, {self.device}).")
 
     def predict(self, image_input, crop_hint=None, generate_cam=True):
@@ -126,24 +132,26 @@ class CropDiseaseClassifier:
 
         tensor = self.transform(image).unsqueeze(0).to(self.device)
 
-        # 1. Primary Model Prediction with torch.no_grad()
-        with torch.no_grad():
+        # 1. Primary Model Prediction with torch.inference_mode()
+        with torch.inference_mode():
             outputs = self.model(tensor)
             probs = F.softmax(outputs, dim=1)[0]
+            topk_probs, topk_indices = torch.topk(probs, min(5, len(self.classes)))
 
-        topk_probs, topk_indices = torch.topk(probs, min(5, len(self.classes)))
+            top_idx = int(topk_indices[0].item())
+            top_prob = float(topk_probs[0].item())
+            top5_indices_list = [int(idx.item()) for idx in topk_indices]
+            top5_probs_list = [float(p.item()) for p in topk_probs]
 
-        top_idx = topk_indices[0].item()
-        top_prob = float(topk_probs[0].item())
         predicted_class = self.classes[top_idx]
         crop_name, disease_name = parse_class_name(predicted_class)
 
         # Build Top-5 Predictions with exact softmax percentages
         top5_predictions = {}
         top5_list = []
-        for i in range(len(topk_indices)):
-            idx_val = topk_indices[i].item()
-            prob_val = round(float(topk_probs[i].item()) * 100, 2)
+        for i in range(len(top5_indices_list)):
+            idx_val = top5_indices_list[i]
+            prob_val = round(top5_probs_list[i] * 100, 2)
             cls_name = self.classes[idx_val]
             c_name, d_name = parse_class_name(cls_name)
             top5_predictions[cls_name] = f"{prob_val}%"
@@ -159,6 +167,9 @@ class CropDiseaseClassifier:
         heatmap_b64 = ""
         if generate_cam:
             heatmap_b64 = self.generate_gradcam(image, tensor, top_idx)
+
+        del tensor, image
+        gc.collect()
 
         return {
             "predicted_class": predicted_class,
@@ -178,11 +189,20 @@ class CropDiseaseClassifier:
         """
         Generates genuine gradient-weighted class activation mapping (Grad-CAM).
         Hooks the final convolutional feature layer of EfficientNet-B0 (model.features[-1]).
+        Memory-safe: hooks registered and removed in try...finally, gradients zeroed with set_to_none=True,
+        intermediate tensors and large numpy arrays explicitly freed, and gc.collect() invoked.
         """
+        handle_fwd = None
+        handle_bwd = None
+        activations = None
+        gradients = None
+        x = None
+        output = None
+        target_score = None
+        weights = None
+        cam = None
         try:
             target_layer = self.model.features[-1]
-            activations = None
-            gradients = None
 
             def forward_hook(module, inp, outp):
                 nonlocal activations
@@ -197,13 +217,10 @@ class CropDiseaseClassifier:
 
             # Grad-CAM requires gradient tracking through target convolutional features
             x = input_tensor.clone().detach().requires_grad_(True)
-            self.model.zero_grad()
+            self.model.zero_grad(set_to_none=True)
             output = self.model(x)
             target_score = output[0, target_class_idx]
             target_score.backward()
-
-            handle_fwd.remove()
-            handle_bwd.remove()
 
             if activations is None or gradients is None:
                 return ""
@@ -219,10 +236,19 @@ class CropDiseaseClassifier:
 
             cam_np = cam.cpu().numpy().astype(np.float32)
 
-            # Resize CAM to original image size
+            # Resize CAM for overlay (bound max dimension to 640px to eliminate memory spikes on large uploads)
             orig_w, orig_h = original_image.size
-            cam_img = Image.fromarray((cam_np * 255).astype(np.uint8)).resize((orig_w, orig_h), resample=Image.BILINEAR)
-            cam_norm = np.array(cam_img).astype(np.float32) / 255.0
+            max_dim = 640
+            if max(orig_w, orig_h) > max_dim:
+                scale = max_dim / float(max(orig_w, orig_h))
+                target_w, target_h = int(orig_w * scale), int(orig_h * scale)
+                overlay_base = original_image.convert("RGB").resize((target_w, target_h), resample=Image.BILINEAR)
+            else:
+                target_w, target_h = orig_w, orig_h
+                overlay_base = original_image.convert("RGB")
+
+            cam_img = Image.fromarray((cam_np * 255).astype(np.uint8)).resize((target_w, target_h), resample=Image.BILINEAR)
+            cam_norm = np.array(cam_img, dtype=np.float32) / 255.0
 
             # Jet colormap formula in pure NumPy
             r = np.clip(1.5 - np.abs(4.0 * cam_norm - 3.0), 0.0, 1.0)
@@ -230,17 +256,28 @@ class CropDiseaseClassifier:
             b = np.clip(1.5 - np.abs(4.0 * cam_norm - 1.0), 0.0, 1.0)
             heatmap_rgb = (np.stack([r, g, b], axis=-1) * 255).astype(np.uint8)
 
-            orig_rgb = np.array(original_image.convert("RGB"))
+            orig_rgb = np.array(overlay_base, dtype=np.uint8)
             overlay = (orig_rgb * 0.55 + heatmap_rgb * 0.45).astype(np.uint8)
 
             out_img = Image.fromarray(overlay)
             buf = io.BytesIO()
             out_img.save(buf, format="JPEG", quality=85)
-            return base64.b64encode(buf.getvalue()).decode("utf-8")
+            encoded = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+            del cam_np, cam_img, cam_norm, r, g, b, heatmap_rgb, orig_rgb, overlay, out_img, buf, overlay_base
+            return encoded
 
         except Exception as e:
             print(f"⚠️ [Grad-CAM Warning] Grad-CAM generation encountered an error: {e}")
             return ""
+        finally:
+            if handle_fwd is not None:
+                handle_fwd.remove()
+            if handle_bwd is not None:
+                handle_bwd.remove()
+            self.model.zero_grad(set_to_none=True)
+            del activations, gradients, x, output, target_score, weights, cam
+            gc.collect()
 
 
 # Compatibility aliases

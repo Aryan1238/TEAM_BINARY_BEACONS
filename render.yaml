@@ -7,5 +7,11 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: FORCE_CPU
+        value: "1"
+      - key: EFFICIENTNET_CHECKPOINT_PATH
+        value: models/efficientnet_b0/100pct_leakage_safe_experiment/best_model_100pct_leakage_safe.pth
       - key: ALLOWED_ORIGINS
         value: https://aryan1238.github.io,https://krushiraksha.vercel.app,http://localhost:5173,http://127.0.0.1:5173

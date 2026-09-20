@@ -22,14 +22,16 @@ class UnifiedCropHealthPipeline:
 
     def process_full_diagnosis(self, image_input=None, crop_name="cotton", growth_stage="vegetative",
                                temperature=28.5, humidity=82.0, rainfall=18.0, leaf_wetness_hours=9.0,
-                               latitude=20.9374, longitude=77.7796, pest_trap_image=None):
+                               latitude=20.9374, longitude=77.7796, pest_trap_image=None,
+                               precomputed_diagnosis=None):
         """
         Executes end-to-end diagnosis and returns unified multi-modal crop health report.
+        Accepts precomputed_diagnosis to avoid duplicate forward passes and optimize memory.
         """
         # Step 1: Image Disease Classification
-        image_result = None
-        if image_input:
-            image_result = self.image_classifier.predict(image_input, crop_hint=crop_name)
+        image_result = precomputed_diagnosis
+        if image_result is None and image_input:
+            image_result = self.image_classifier.predict(image_input, crop_hint=crop_name, generate_cam=False)
 
         # Step 2: Pest Trap Detection if trap image provided
         pest_result = None
