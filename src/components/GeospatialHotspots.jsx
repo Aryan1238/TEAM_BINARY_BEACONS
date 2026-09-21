@@ -27,8 +27,10 @@ import L from 'leaflet';
 import { maharashtraDistricts } from '../data/maharashtraGeo';
 import { getGeospatialHotspots } from '../services/geospatialEngine';
 import confetti from 'canvas-confetti';
+import { getUiTranslation } from '../data/uiTranslations';
 
 export const GeospatialHotspots = ({ currentLang, onNavigate }) => {
+  const t = getUiTranslation(currentLang).hotspots || {};
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layersRef = useRef({
@@ -325,15 +327,15 @@ export const GeospatialHotspots = ({ currentLang, onNavigate }) => {
           <div className="space-y-2 max-w-2xl relative z-10">
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-400 text-rose-950">
-                Pillar 3: Geospatial Hotspot Surveillance
+                {t.pillarTag || 'Pillar 3: Geospatial Hotspot Surveillance'}
               </span>
               <span className="text-xs text-emerald-300 font-mono">DBSCAN + Spatiotemporal Engine</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-serif-display">
-              GIS Epidemiological Cluster & Hotspot Surveillance
+              {t.title || 'GIS Epidemiological Cluster & Hotspot Surveillance'}
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-              Spatial disease tracking with exact Haversine DBSCAN clustering, spatiotemporal contagion velocity vectors (km/day), multi-factor risk scores, and 1-Click Mass Broadcast SMS containment.
+              {t.subtitle || 'Spatial disease tracking with exact Haversine DBSCAN clustering, spatiotemporal contagion velocity vectors (km/day), multi-factor risk scores, and 1-Click Mass Broadcast SMS containment.'}
             </p>
           </div>
 
@@ -342,7 +344,7 @@ export const GeospatialHotspots = ({ currentLang, onNavigate }) => {
             <div className="flex items-center justify-between space-x-6">
               <span className="text-emerald-300 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-                Active Hotspots:
+                {t.activeHotspots || 'Active Hotspots:'}
               </span>
               <span className="font-bold text-rose-400 font-mono text-sm">
                 {analysisData?.active_hotspot_clusters ?? 0} Outbreak Zones
@@ -351,7 +353,7 @@ export const GeospatialHotspots = ({ currentLang, onNavigate }) => {
             <div className="flex items-center justify-between space-x-6">
               <span className="text-emerald-300 flex items-center gap-1.5">
                 <Activity className="w-3.5 h-3.5 text-amber-300" />
-                Total Active Cases:
+                {t.activeCases || 'Total Active Cases:'}
               </span>
               <span className="font-bold text-amber-300 font-mono text-sm">
                 {analysisData?.active_cases_total ?? 0} Cases
@@ -360,7 +362,7 @@ export const GeospatialHotspots = ({ currentLang, onNavigate }) => {
             <div className="flex items-center justify-between space-x-6">
               <span className="text-emerald-300 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-blue-300" />
-                Quarantine Coverage:
+                {t.farmersAtRisk || 'Quarantine Coverage:'}
               </span>
               <span className="font-bold text-blue-300 font-mono text-sm">
                 {totalQuarantineFarmers.toLocaleString('en-IN')} Farmers
@@ -385,7 +387,7 @@ export const GeospatialHotspots = ({ currentLang, onNavigate }) => {
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-slate-700 flex items-center space-x-1 mr-2">
               <Filter className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Filter by Crop:</span>
+              <span>{t.filterCrops || 'Filter by Crop:'}</span>
             </span>
             {['All', 'Tomato', 'Cotton', 'Grapes', 'Pomegranate', 'Soybean'].map(crop => (
               <button

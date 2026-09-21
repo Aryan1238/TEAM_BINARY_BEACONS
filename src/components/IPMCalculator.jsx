@@ -17,8 +17,10 @@ import {
   Check
 } from 'lucide-react';
 import { cropDiseases } from '../data/cropDiseases';
+import { getUiTranslation } from '../data/uiTranslations';
 
 export const IPMCalculator = ({ currentLang, selectedDisease, onSelectDisease }) => {
+  const t = getUiTranslation(currentLang).ipm || {};
   const [activeDiseaseId, setActiveDiseaseId] = useState(selectedDisease?.id || cropDiseases[0].id);
   const disease = cropDiseases.find(d => d.id === activeDiseaseId) || cropDiseases[0];
 
@@ -54,15 +56,15 @@ export const IPMCalculator = ({ currentLang, selectedDisease, onSelectDisease })
           <div className="space-y-2 max-w-2xl relative z-10">
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-400 text-purple-950">
-                Pillar 4: Integrated Pest Management
+                {t.pillarTag || 'Pillar 4: Integrated Pest Management'}
               </span>
               <span className="text-xs text-emerald-300 font-mono">CIBRC & ICAR Package of Practices</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              CIBRC Regimen & Precision Spray Dosage Engine
+              {t.title || 'CIBRC Regimen & Precision Spray Dosage Engine'}
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-              Automated acreage-to-knapsack tank dilution calculator, Pre-Harvest Interval (PHI) compliance tracker, and chemical safety matrix.
+              {t.subtitle || 'Automated acreage-to-knapsack tank dilution calculator, Pre-Harvest Interval (PHI) compliance tracker, and chemical safety matrix.'}
             </p>
           </div>
 
@@ -108,7 +110,7 @@ export const IPMCalculator = ({ currentLang, selectedDisease, onSelectDisease })
             {/* Input 1: Farm Acreage Slider */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                <span>Total Farm Area to Spray:</span>
+                <span>{t.farmSize || 'Total Farm Area to Spray:'}</span>
                 <span className="text-base font-extrabold text-emerald-800 font-mono bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
                   {farmAcres} Acres ({(farmAcres * 40).toFixed(0)} Gunthas)
                 </span>
@@ -132,7 +134,7 @@ export const IPMCalculator = ({ currentLang, selectedDisease, onSelectDisease })
             {/* Input 2: Knapsack Tank Size Selector */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 block">
-                Select Sprayer Pump Type / Tank Capacity:
+                {t.tankSize || 'Select Sprayer Pump Type / Tank Capacity:'}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
@@ -197,13 +199,13 @@ export const IPMCalculator = ({ currentLang, selectedDisease, onSelectDisease })
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-[#0A261D] rounded-xl border border-emerald-900">
-                  <span className="text-[11px] text-emerald-300 block">Total Water Required</span>
+                  <span className="text-[11px] text-emerald-300 block">{t.waterRequired || 'Total Water Required'}</span>
                   <span className="text-xl font-extrabold text-white font-mono">{totalWaterLiters} Liters</span>
                   <span className="text-[10px] text-emerald-400 block mt-0.5">~{totalTankLoads} pump loads</span>
                 </div>
 
                 <div className="p-3 bg-[#0A261D] rounded-xl border border-emerald-900">
-                  <span className="text-[11px] text-amber-300 block">Total Chemical Required</span>
+                  <span className="text-[11px] text-amber-300 block">{t.chemicalRequired || 'Total Chemical Required'}</span>
                   <span className="text-xl font-extrabold text-amber-400 font-mono">
                     {totalChemicalRequired} {unit}
                   </span>
@@ -213,7 +215,7 @@ export const IPMCalculator = ({ currentLang, selectedDisease, onSelectDisease })
 
               <div className="p-3.5 bg-emerald-900/60 rounded-xl border border-emerald-700 text-xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-emerald-200">Per Knapsack Tank Formulation:</span>
+                  <span className="font-bold text-emerald-200">{t.chemicalPerTank || 'Per Knapsack Tank Formulation:'}</span>
                   <span className="font-extrabold text-amber-300 font-mono text-sm">
                     {chemicalPerTank} {unit} / {tankSizeLiters}L Tank
                   </span>
@@ -224,7 +226,7 @@ export const IPMCalculator = ({ currentLang, selectedDisease, onSelectDisease })
               </div>
 
               <div className="flex items-center justify-between text-xs pt-1 text-emerald-200 font-medium">
-                <span>Estimated Input Expenditure:</span>
+                <span>{t.estimatedCost || 'Estimated Input Expenditure:'}</span>
                 <span className="font-bold text-white text-sm font-mono">₹ {totalEstimatedCost.toLocaleString('en-IN')}</span>
               </div>
             </div>
@@ -242,7 +244,7 @@ export const IPMCalculator = ({ currentLang, selectedDisease, onSelectDisease })
                 <div className="flex items-center space-x-2">
                   <Clock className="w-5 h-5 text-amber-600" />
                   <h3 className="text-base font-bold text-slate-900">
-                    Food Safety & Pre-Harvest Interval (PHI)
+                    {t.phiWarning || 'Food Safety & Pre-Harvest Interval (PHI)'}
                   </h3>
                 </div>
                 <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200 font-mono">

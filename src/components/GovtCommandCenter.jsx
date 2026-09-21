@@ -25,6 +25,7 @@ import { maharashtraDistricts } from '../data/maharashtraGeo';
 import confetti from 'canvas-confetti';
 import { useDiagnosis } from '../context/DiagnosisContext';
 import { useCountUp } from '../hooks/useCountUp';
+import { getUiTranslation } from '../data/uiTranslations';
 
 // ─── Seeded monsoon wind directions per district (fixed, not random) ───
 const DISTRICT_WIND = {
@@ -61,8 +62,9 @@ const INITIAL_STOCKS = [
 ];
 
 export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
+  const t = getUiTranslation(currentLang).govt || {};
   const { govtAggregates, latestDiagnosis } = useDiagnosis();
-  const [retrainingStatus, setRetrainingStatus] = useState('Idle (PyTorch EfficientNet-B0 v2.4.1 Production)');
+  const [retrainingStatus, setRetrainingStatus] = useState('Idle (PyTorch EfficientNet-B0 v2.4.1 Production Checkpoint)');
   const [isRetraining, setIsRetraining] = useState(false);
   const [stocks, setStocks] = useState(INITIAL_STOCKS);
   const [procurementAlerts, setProcurementAlerts] = useState({});
@@ -74,15 +76,15 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
 
   const handleTriggerRetrain = () => {
     setIsRetraining(true);
-    setRetrainingStatus('Ingesting ground-truth annotations from extension officers...');
+    setRetrainingStatus('Step 1/3: Ingesting verified ground-truth annotations from extension officers (Trust Score ≥ 80)...');
     setTimeout(() => {
-      setRetrainingStatus('Fine-tuning PyTorch EfficientNet-B0 on Maharashtra field variants...');
+      setRetrainingStatus('Step 2/3: Simulating offline benchmark evaluation against 100% leakage-safe split...');
       setTimeout(() => {
         setIsRetraining(false);
-        setRetrainingStatus('Active (EfficientNet-B0 Checkpoint Verified & Deployed)');
+        setRetrainingStatus('Simulation Complete: EfficientNet-B0 v2.4.1 Checkpoint Verified & Ready for Deployment');
         confetti({ particleCount: 30, spread: 70, origin: { y: 0.6 } });
       }, 1500);
-    }, 1200);
+    }, 1400);
   };
 
   const handleEmergencyProcurement = (id, molecule) => {
@@ -106,15 +108,15 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
           <div className="space-y-2 max-w-2xl relative z-10">
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-200 text-slate-900 font-mono">
-                Pillar 5: State Command & Governance
+                {t.pillarTag || 'Pillar 5: State Command & Governance'}
               </span>
-              <span className="text-xs text-emerald-300 font-mono">Government of Maharashtra Agriculture Department</span>
+              <span className="text-xs text-emerald-300 font-mono">{t.deptTitle || 'Government of Maharashtra Agriculture Department'}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              State-Wide Epidemic Surveillance Command Center
+              {t.title || 'State-Wide Epidemic Surveillance Command Center'}
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
-              Macro-epidemiology monitoring across 8 pilot districts, supply-chain input buffer management, and automated Active Learning model continuous retraining.
+              {t.subtitle || 'Macro-epidemiology monitoring across 8 pilot districts, supply-chain input buffer management, and automated Active Learning model continuous retraining.'}
             </p>
           </div>
           <div className="flex items-center space-x-3 shrink-0">
@@ -155,12 +157,12 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="rounded-2xl p-4 bg-emerald-50/60 border border-emerald-200/80 hover:shadow-sm transition-shadow">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 block">Live Diagnoses Ingested</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 block">{t.kpiLive || 'Live Diagnoses Ingested'}</span>
               <span className="text-3xl font-extrabold text-emerald-950 font-mono block mt-1">{animatedLiveDiagnoses}</span>
               <span className="text-[11px] text-emerald-700 font-medium">{govtAggregates.hasLiveDiagnoses ? 'Synchronized with session' : 'Standby for camera/upload scans'}</span>
             </div>
             <div className="rounded-2xl p-4 bg-rose-50/60 border border-rose-200/80 hover:shadow-sm transition-shadow">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-rose-900 block">Live Critical Outbreaks</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-rose-900 block">{t.kpiCritical || 'Live Critical Outbreaks'}</span>
               <span className={`text-3xl font-extrabold text-rose-600 font-mono block mt-1 ${govtAggregates.liveCriticalCount > 0 ? 'animate-pulse' : ''}`}>{animatedLiveCritical}</span>
               <span className="text-[11px] text-rose-700 font-medium">{govtAggregates.liveCriticalCount > 0 ? 'Field verification flagged' : 'No critical flags'}</span>
             </div>
@@ -203,76 +205,154 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
         </div>
 
         {/* ─────────────────────────────────────────── */}
+        {/* ─────────────────────────────────────────── */}
         {/* TWO-COLUMN: TABLE + SPREAD CONE / STOCK    */}
         {/* ─────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          {/* LEFT: District Surveillance Table */}
-          <div id="govt-table" className="lg:col-span-7 scroll-mt-24 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center space-x-2">
-                <BarChart3 className="w-5 h-5 text-emerald-700" />
-                <h2 className="text-base font-bold text-slate-900">District Outbreak & Surveillance Breakdown (DEMO / BASELINE)</h2>
+          {/* LEFT: District Surveillance Table & Continuous Learning Architecture */}
+          <div className="lg:col-span-7 space-y-6">
+            <div id="govt-table" className="scroll-mt-24 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <BarChart3 className="w-5 h-5 text-emerald-700" />
+                  <h2 className="text-base font-bold text-slate-900">{t.districtRegisterTitle || 'District Outbreak & Surveillance Breakdown'} (DEMO / BASELINE)</h2>
+                </div>
+                <button
+                  onClick={() => alert('Downloading official Maharashtra crop epidemiology report PDF...')}
+                  className="text-xs text-emerald-800 font-bold flex items-center space-x-1 hover:underline cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export State Report</span>
+                </button>
               </div>
-              <button
-                onClick={() => alert('Downloading official Maharashtra crop epidemiology report PDF...')}
-                className="text-xs text-emerald-800 font-bold flex items-center space-x-1 hover:underline cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export State Report</span>
-              </button>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+                      <th className="py-2.5 px-3">District</th>
+                      <th className="py-2.5 px-3">Primary Pathogen</th>
+                      <th className="py-2.5 px-3">Active Cases</th>
+                      <th className="py-2.5 px-3">Wind</th>
+                      <th className="py-2.5 px-3">Risk</th>
+                      <th className="py-2.5 px-3">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                    {maharashtraDistricts.map((dist) => {
+                      const wind = DISTRICT_WIND[dist.name] || { dir: '—' };
+                      return (
+                        <tr key={dist.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-3">
+                            <span className="font-bold text-slate-900 block">{dist.name}</span>
+                            <span className="text-[10px] text-slate-400 font-normal">{dist.marathiName}</span>
+                          </td>
+                          <td className="py-3 px-3 text-[11px] max-w-[130px] truncate">{dist.majorDisease}</td>
+                          <td className="py-3 px-3 font-mono font-bold text-slate-900">{dist.activeCases}</td>
+                          <td className="py-3 px-3">
+                            <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">{wind.dir}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              dist.riskLevel === 'Critical' ? 'bg-rose-100 text-rose-800 animate-pulse' :
+                              dist.riskLevel === 'High' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              {dist.riskLevel}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <button
+                              onClick={() => onNavigate('hotspots')}
+                              className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 text-[10px] font-bold transition-colors cursor-pointer"
+                            >
+                              View GIS
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
-                    <th className="py-2.5 px-3">District</th>
-                    <th className="py-2.5 px-3">Primary Pathogen</th>
-                    <th className="py-2.5 px-3">Active Cases</th>
-                    <th className="py-2.5 px-3">Wind</th>
-                    <th className="py-2.5 px-3">Risk</th>
-                    <th className="py-2.5 px-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                  {maharashtraDistricts.map((dist) => {
-                    const wind = DISTRICT_WIND[dist.name] || { dir: '—' };
-                    return (
-                      <tr key={dist.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 px-3">
-                          <span className="font-bold text-slate-900 block">{dist.name}</span>
-                          <span className="text-[10px] text-slate-400 font-normal">{dist.marathiName}</span>
-                        </td>
-                        <td className="py-3 px-3 text-[11px] max-w-[130px] truncate">{dist.majorDisease}</td>
-                        <td className="py-3 px-3 font-mono font-bold text-slate-900">{dist.activeCases}</td>
-                        <td className="py-3 px-3">
-                          <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">{wind.dir}</span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            dist.riskLevel === 'Critical' ? 'bg-rose-100 text-rose-800 animate-pulse' :
-                            dist.riskLevel === 'High' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-                          }`}>
-                            {dist.riskLevel}
-                          </span>
-                        </td>
-                        <td className="py-3 px-3">
-                          <button
-                            onClick={() => onNavigate('hotspots')}
-                            className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 text-[10px] font-bold transition-colors cursor-pointer"
-                          >
-                            View GIS
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+
+            {/* ── Active Learning Pipeline Architecture (DEMO / SIMULATION) ── */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <Cpu className="w-5 h-5 text-purple-600" />
+                  <h3 className="text-base font-bold text-slate-900">{t.retrainTitle || 'Continuous Learning Pipeline Architecture'}</h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900 border border-purple-200 font-mono">
+                  CONCEPTUAL ARCHITECTURE (DEMO)
+                </span>
+              </div>
+
+              {/* Explanatory Banner */}
+              <div className="rounded-2xl bg-purple-50/80 border border-purple-200/80 p-4 space-y-2">
+                <div className="flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
+                  <div className="text-xs text-purple-950 space-y-1">
+                    <p className="font-bold">Automated Continuous Improvement Lifecycle (Supervised Airflow/Kubeflow Flow)</p>
+                    <p className="text-[11px] text-purple-900/90 leading-relaxed">
+                      In production deployment, client-side browsers and mobile apps do <span className="font-bold underline">not</span> retrain neural weights directly. Instead, verified field diagnoses from high-credibility extension officers (Trust Score ≥ 80) are ingested into an offline Airflow/Kubeflow pipeline for supervised verification.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 Pipeline Stages */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800">1. Field Telemetry Queue</span>
+                    <span className="font-mono text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold">1,240 Samples</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500">Unlabeled and borderline foliar scans flagged by officers.</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800">2. Quality & Leakage Gate</span>
+                    <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">Passed</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500">Laplacian blur variance check & strict train/test split isolation.</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800">3. Scheduled Batch Job</span>
+                    <span className="font-mono text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">Airflow / Kubeflow</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500">GPU batch fine-tuning on regional Maharashtra variants.</p>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800">4. Checkpoint Promotion</span>
+                    <span className="font-mono text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">ICAR / KVK Sign-Off</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500">Automated canary release with zero service downtime.</p>
+                </div>
+              </div>
+
+              {/* Status Box & Simulation Trigger */}
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-[11px]">
+                  <span className="font-bold text-slate-700">Orchestrator Simulation Status:</span>
+                  <span className="font-mono font-bold text-emerald-800 text-[11px] truncate">{retrainingStatus}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleTriggerRetrain}
+                disabled={isRetraining}
+                className="w-full py-3 bg-[#0F382A] hover:bg-[#164E3A] text-white rounded-2xl text-xs font-bold transition-all shadow flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 text-amber-400 ${isRetraining ? 'animate-spin' : ''}`} />
+                <span>{isRetraining ? 'Simulating Pipeline Orchestration Flow...' : 'Simulate Pipeline Orchestration Flow (Demo)'}</span>
+              </button>
             </div>
           </div>
 
-          {/* RIGHT: Spread Cone + Stock + Retraining */}
+          {/* RIGHT: Spread Cone + Stock */}
           <div className="lg:col-span-5 space-y-6">
 
             {/* ── Spread Cone SVG Visualization ── */}
@@ -281,7 +361,7 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
                 <div className="flex items-center space-x-2">
                   <Wind className="w-5 h-5 text-blue-600" />
                   <h3 className="text-base font-bold text-slate-900">
-                    Spread Cone Predictor
+                    {t.spreadGridTitle || 'Spread Cone Predictor'}
                     <span className="text-[10px] text-slate-500 ml-2 font-normal">(DEMO / BASELINE)</span>
                   </h3>
                 </div>
@@ -346,7 +426,7 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
                 <div className="flex items-center space-x-2">
                   <Package className="w-5 h-5 text-amber-600" />
                   <h3 className="text-base font-bold text-slate-900">
-                    District Input Buffer Stockpile (DEMO / BASELINE)
+                    {t.bufferStockTitle || 'District Input Buffer Stockpile'} (DEMO / BASELINE)
                   </h3>
                 </div>
                 <span className="text-[10px] text-slate-500 font-mono">Baseline Inventory</span>
@@ -418,40 +498,6 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
                   );
                 })}
               </div>
-            </div>
-
-            {/* ── Active Learning Pipeline ── */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center space-x-2">
-                  <Cpu className="w-5 h-5 text-purple-600" />
-                  <h3 className="text-base font-bold text-slate-900">Continuous Learning Pipeline (DEMO / BASELINE)</h3>
-                </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-900 font-mono">DEMO SIMULATION</span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 text-xs space-y-2">
-                <div className="flex justify-between font-medium">
-                  <span className="text-purple-950 font-bold">Unlabeled Queue:</span>
-                  <span className="font-mono font-bold text-purple-900">1,240 Verified Ground Samples</span>
-                </div>
-                <div className="flex justify-between font-medium">
-                  <span className="text-purple-950 font-bold">Pipeline Status:</span>
-                  <span className="font-mono text-emerald-800 font-bold text-[11px]">{retrainingStatus}</span>
-                </div>
-                <p className="text-[11px] text-purple-800 leading-relaxed">
-                  [DEMO / BASELINE] Prototype workflow illustrating ingestion of confirmed field variations into the PyTorch continuous learning pipeline.
-                </p>
-              </div>
-
-              <button
-                onClick={handleTriggerRetrain}
-                disabled={isRetraining}
-                className="w-full py-3 bg-[#0F382A] hover:bg-[#164E3A] text-white rounded-2xl text-xs font-bold transition-all shadow flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 text-amber-400 ${isRetraining ? 'animate-spin' : ''}`} />
-                <span>{isRetraining ? 'Simulating Model Fine-Tuning Job...' : 'Simulate Model Fine-Tuning Pipeline (Demo)'}</span>
-              </button>
             </div>
 
           </div>

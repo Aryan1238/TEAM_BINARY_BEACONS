@@ -171,11 +171,20 @@ export const runUniversalCropDiagnosis = async (file) => {
 
   } catch (backendErr) {
     console.error('❌ PyTorch EfficientNet-B0 Backend Error:', backendErr);
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    const isLocalBackend = ANALYZE_ENDPOINT.includes('127.0.0.1') || ANALYZE_ENDPOINT.includes('localhost');
+    let helpfulMsg = `Cannot connect to PyTorch EfficientNet-B0 backend at ${ANALYZE_ENDPOINT}: ${backendErr.message}.`;
+    if (isHttps && isLocalBackend) {
+      helpfulMsg += ` This app is served over HTTPS (cloud deployment), but the backend URL points to localhost. Cloud deployments require setting the VITE_BACKEND_URL repository secret in GitHub to your live service URL. For local testing, ensure your local backend is running (uvicorn main:app --reload on port 8000).`;
+    } else {
+      helpfulMsg += ` Please ensure the backend server is running ('uvicorn main:app --reload' on port 8000).`;
+    }
+
     return {
       isLeaf: false,
       validationError: true,
       errorCode: 'BACKEND_CONNECTION_ERROR',
-      message: `Cannot connect to PyTorch EfficientNet-B0 backend at ${ANALYZE_ENDPOINT}: ${backendErr.message}. Please ensure the backend server is running ('uvicorn main:app --reload' on port 8000).`,
+      message: helpfulMsg,
       statusMessage: `⚠️ Backend Connection Failed: ${backendErr.message}`,
       source: 'PyTorch EfficientNet-B0 (Backend Offline)',
       previewUrl: dataUrl

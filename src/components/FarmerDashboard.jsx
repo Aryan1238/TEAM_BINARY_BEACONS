@@ -23,15 +23,18 @@ import { FieldHealthPassport } from './FieldHealthPassport';
 import { useDiagnosis } from '../context/DiagnosisContext';
 import { cropDiseases } from '../data/cropDiseases';
 import { useCountUp } from '../hooks/useCountUp';
+import { getUiTranslation } from '../data/uiTranslations';
+import { KrushiHeroSection } from './KrushiHeroSection';
 
 // Field Health Action Timeline Component
-const FieldHealthTimeline = ({ timelineStep = 'Scan Completed', priority = 'WATCH', timestamp = 'Just now' }) => {
+const FieldHealthTimeline = ({ timelineStep = 'Scan Completed', priority = 'WATCH', timestamp = 'Just now', currentLang = 'en' }) => {
+  const t = getUiTranslation(currentLang).farmer || {};
   const steps = [
-    { key: 'Scan Completed', label: 'Scan Completed', desc: 'PyTorch inference pass' },
-    { key: 'Disease Identified', label: 'Disease Identified', desc: 'Foliar pathology match' },
-    { key: 'Priority Assigned', label: 'Priority Assigned', desc: priority },
-    { key: 'Advisory Generated', label: 'Advisory Generated', desc: 'CIBRC IPM rules' },
-    { key: 'Follow-up Required', label: 'Follow-up / Monitored', desc: 'Field observation' }
+    { key: 'Scan Completed', label: t.timelineScan || 'Scan Completed', desc: 'PyTorch inference pass' },
+    { key: 'Disease Identified', label: t.timelineDisease || 'Disease Identified', desc: 'Foliar pathology match' },
+    { key: 'Priority Assigned', label: t.timelinePriority || 'Priority Assigned', desc: priority },
+    { key: 'Advisory Generated', label: t.timelineAdvisory || 'Advisory Generated', desc: 'CIBRC IPM rules' },
+    { key: 'Follow-up Required', label: t.timelineFollowup || 'Follow-up / Monitored', desc: 'Field observation' }
   ];
 
   const currentIdx = steps.findIndex(s => s.key === timelineStep) !== -1
@@ -44,7 +47,7 @@ const FieldHealthTimeline = ({ timelineStep = 'Scan Completed', priority = 'WATC
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
           <h3 className="font-serif-display font-bold text-stone-900 text-sm sm:text-base">
-            Field Health Action Timeline
+            {t.timelineTitle || 'Field Health Action Timeline'}
           </h3>
         </div>
         <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">
@@ -189,6 +192,231 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
   const animatedTotalScans = useCountUp(farmerStats.totalScans);
   const animatedIssuesDetected = useCountUp(farmerStats.issuesDetected);
   const animatedLossPrevented = useCountUp(farmerStats.lossPrevented);
+  const t = getUiTranslation(currentLang).farmer || {};
+
+  // 1. Field Credibility Card
+  const CredibilityCard = (() => {
+    const score = farmerTrustScore || 72;
+    const credLabel = score >= 75 ? (t.statusGood || 'Good') : score >= 55 ? (t.statusFair || 'Fair') : (t.statusNeedsVerification || 'Needs Verification');
+    const credColor = score >= 75
+      ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+      : score >= 55
+      ? 'bg-amber-50 border-amber-300 text-amber-800'
+      : 'bg-rose-50 border-rose-300 text-rose-800';
+    const barColor = score >= 75 ? 'bg-emerald-500' : score >= 55 ? 'bg-amber-400' : 'bg-rose-500';
+    return (
+      <div id="farmer-credibility" className={`rounded-3xl p-4 sm:p-5 border shadow-sm space-y-3 scroll-mt-24 hover:shadow-md transition-shadow ${credColor}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏅</span>
+            <h3 className="font-bold text-sm">{t.credibilityTitle || 'Field Credibility & Trust Rating'}</h3>
+          </div>
+          <span className={`text-xs font-extrabold px-3 py-1 rounded-full border font-mono ${credColor}`}>
+            {credLabel}
+          </span>
+        </div>
+        <div className="w-full h-2.5 bg-black/10 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${score}%` }} />
+        </div>
+        <p className="text-xs leading-relaxed opacity-80">
+          {t.verifiedByOfficers || 'Verified by Agricultural Extension Officers. Accurate reports help prioritize your plots for faster field visits.'}
+        </p>
+      </div>
+    );
+  })();
+
+  // 2. Field Health Trend (30-day SVG sparkline)
+  const HealthTrendCard = (() => {
+    const activeField = fields[0];
+    const trend = activeField?.healthTrend || [];
+    if (trend.length === 0) return null;
+
+    const W = 300, H = 72, PAD = 8;
+    const scores = trend.map(item => item.score);
+    const minS = Math.min(...scores), maxS = Math.max(...scores);
+    const range = maxS - minS || 1;
+
+    const pts = trend.map((item, i) => {
+      const x = PAD + ((i / (trend.length - 1)) * (W - 2 * PAD));
+      const y = H - PAD - ((item.score - minS) / range) * (H - 2 * PAD);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+
+    const latestScore = scores[scores.length - 1];
+    const trendColor = latestScore >= 80 ? '#10b981' : latestScore >= 65 ? '#f59e0b' : '#ef4444';
+
+    return (
+      <div id="farmer-fields" className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200 scroll-mt-24 hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <span className="text-base">📈</span>
+            <h3 className="font-bold text-sm text-slate-900">{t.healthTrendTitle || 'Field Health Trend — 30 Days'}</h3>
+          </div>
+          <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+            {activeField?.name?.replace('[DEMO / BASELINE] ', '')}
+          </span>
+        </div>
+        <div className="mt-3">
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-20 rounded-xl">
+            {[25, 50, 75].map(pct => {
+              const y = H - PAD - ((pct - minS) / range) * (H - 2 * PAD);
+              if (y < PAD || y > H - PAD) return null;
+              return <line key={pct} x1={PAD} y1={y} x2={W - PAD} y2={y} stroke="#e2e8f0" strokeWidth="0.5" />;
+            })}
+            <defs>
+              <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={trendColor} stopOpacity="0.25" />
+                <stop offset="100%" stopColor={trendColor} stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+            <polygon
+              points={`${PAD},${H - PAD} ${pts.join(' ')} ${W - PAD},${H - PAD}`}
+              fill="url(#sparkFill)"
+            />
+            <polyline points={pts.join(' ')} fill="none" stroke={trendColor} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+            <circle cx={pts[pts.length - 1].split(',')[0]} cy={pts[pts.length - 1].split(',')[1]} r="3" fill={trendColor} />
+          </svg>
+          <div className="flex justify-between text-[9px] text-slate-400 font-mono mt-1 px-1">
+            <span>30d ago</span>
+            <span className="font-bold text-slate-600">{t.currentScore || 'Current Health Score'}: <span style={{ color: trendColor }}>{latestScore}%</span></span>
+            <span>Today</span>
+          </div>
+        </div>
+      </div>
+    );
+  })();
+
+  // 3. PHI Compliance Tracker
+  const PhiTrackerCard = (() => {
+    const activeField = fields[0];
+    if (!activeField?.lastSprayDate || !activeField?.phiDays) return null;
+
+    const lastSpray = new Date(activeField.lastSprayDate);
+    const daysSinceSpray = Math.round((Date.now() - lastSpray.getTime()) / 86400000);
+    const daysUntilSafe = Math.max(0, activeField.phiDays - daysSinceSpray);
+    const isHarvestSafe = daysUntilSafe === 0;
+    const isNearPHI = daysUntilSafe <= 5 && daysUntilSafe > 0;
+
+    const sprayLabel = lastSpray.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    const phiColor = isHarvestSafe
+      ? 'border-emerald-200 bg-emerald-50'
+      : isNearPHI
+      ? 'border-amber-300 bg-amber-50'
+      : 'border-rose-200 bg-rose-50';
+    const phiStatusColor = isHarvestSafe ? 'text-emerald-700' : isNearPHI ? 'text-amber-700' : 'text-rose-700';
+    const phiBarColor = isHarvestSafe ? 'bg-emerald-500' : isNearPHI ? 'bg-amber-400' : 'bg-rose-500';
+    const phiPct = Math.round((daysSinceSpray / activeField.phiDays) * 100);
+
+    return (
+      <div id="farmer-phi" className={`rounded-3xl p-4 sm:p-5 border shadow-sm scroll-mt-24 space-y-3 hover:shadow-md transition-shadow ${phiColor}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🛡️</span>
+            <h3 className="font-bold text-sm text-slate-900">{t.phiTitle || 'PHI Compliance Tracker'}</h3>
+          </div>
+          <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full border font-mono ${
+            isHarvestSafe ? 'bg-emerald-100 border-emerald-300 text-emerald-800' :
+            isNearPHI ? 'bg-amber-100 border-amber-300 text-amber-800' :
+            'bg-rose-100 border-rose-300 text-rose-800'
+          }`}>
+            {isHarvestSafe ? (t.safeToHarvest || 'SAFE TO HARVEST') : isNearPHI ? 'CAUTION (PHI)' : (t.sprayResidue || 'SPRAY RESIDUE ACTIVE')}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div className="bg-white/70 rounded-2xl p-3 border border-black/5">
+            <span className="text-slate-500 block text-[10px] uppercase tracking-wider font-bold">{t.lastSprayed || 'Last Chemical Applied'}</span>
+            <span className="font-bold text-slate-800 block mt-0.5 leading-tight text-[11px]">{activeField.lastSprayChemical}</span>
+            <span className="text-slate-500 text-[10px]">{daysSinceSpray} days ago</span>
+          </div>
+          <div className="bg-white/70 rounded-2xl p-3 border border-black/5">
+            <span className="text-slate-500 block text-[10px] uppercase tracking-wider font-bold">PHI Window</span>
+            <span className="font-mono font-bold text-slate-900 block mt-0.5">{activeField.phiDays} days</span>
+            <span className="text-slate-500 text-[10px]">CIBRC Official</span>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+            <span>Spray</span>
+            <span className={`font-bold ${phiStatusColor}`}>{isHarvestSafe ? 'Safe' : `${daysUntilSafe}d left`}</span>
+            <span>Harvest</span>
+          </div>
+          <div className="w-full h-2.5 bg-black/10 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${phiBarColor}`}
+              style={{ width: `${Math.min(100, phiPct)}%` }}
+            />
+          </div>
+        </div>
+
+        <p className="text-[10px] text-slate-500 italic">
+          {t.phiSubtitle || 'CIBRC Safe Harvest Interval Monitoring. Do not harvest produce before PHI expires.'}
+        </p>
+      </div>
+    );
+  })();
+
+  // 4. Nearest Agri-Input Store Stock
+  const NearestStoreCard = (() => {
+    const activeField = fields[0];
+    const latestDisease = (activeField?.diseaseHistory?.[0] || '').toLowerCase();
+
+    const govtStocks = [
+      { molecule: 'Copper Oxychloride 50 WP', stockPct: 84, relevance: ['blight', 'downy', 'bacterial', 'canker', 'spot'] },
+      { molecule: 'Trichoderma viride 2% WP', stockPct: 72, relevance: ['soil', 'rot', 'wilt', 'fusarium'] },
+      { molecule: 'Chlorantraniliprole 18.5 SC', stockPct: 28, relevance: ['bollworm', 'moth', 'larva', 'borer'] },
+      { molecule: 'Beauveria bassiana 1.15% WP', stockPct: 65, relevance: ['whitefly', 'thrips', 'aphid', 'mite'] },
+    ];
+
+    const relevant = govtStocks.filter(s =>
+      s.relevance.some(kw => latestDisease.includes(kw))
+    );
+    const display = relevant.length >= 2 ? relevant.slice(0, 3) : govtStocks.slice(0, 3);
+
+    return (
+      <div id="farmer-store" className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm scroll-mt-24 space-y-3 hover:shadow-md transition-shadow">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🏪</span>
+            <h3 className="font-bold text-sm text-slate-900">{t.nearestStoreTitle || 'Nearest Certified Agri-Input Retailer'}</h3>
+          </div>
+          <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-mono">
+            {t.nearestStoreSubtitle || 'Govt Buffer Stock'}
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          {display.map((item, idx) => {
+            const isLow = item.stockPct <= 28;
+            return (
+              <div key={idx} className={`flex items-center justify-between p-2.5 rounded-2xl text-xs border ${
+                isLow ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div>
+                  <span className="font-bold text-slate-900 block">{item.molecule}</span>
+                  {isLow && <span className="text-[10px] text-rose-700 font-bold">🚨 {t.lowStock || 'Low stock'} — check supplier</span>}
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                    isLow ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {item.stockPct}%
+                  </span>
+                  <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${isLow ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${item.stockPct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  })();
 
   // Farmer Dashboard Layout Content
   const DashboardCore = (
@@ -200,7 +428,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
         <div className="relative z-10">
           <p className="text-emerald-200/90 text-sm font-medium tracking-wide">
-            Good morning,
+            {t.greeting || 'Good morning,'}
           </p>
           <h1 className="font-serif-display text-3xl sm:text-4xl font-bold tracking-tight text-white mt-0.5 mb-1.5 drop-shadow-xs">
             {farmer.name}
@@ -224,7 +452,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-100/80 font-medium">
               <span className="text-xs group-hover:scale-110 transition-transform">📷</span>
-              <span>Total Scans</span>
+              <span>{t.totalScans || 'Total Scans'}</span>
             </div>
           </div>
 
@@ -235,7 +463,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200/90 font-medium">
               <span className="text-xs">⚠️</span>
-              <span>Issues Detected</span>
+              <span>{t.issuesDetected || 'Issues Detected'}</span>
             </div>
           </div>
 
@@ -245,7 +473,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-200 font-medium">
               <span className="text-xs">✅</span>
-              <span>Resolved</span>
+              <span>{t.resolved || 'Resolved'}</span>
             </div>
           </div>
 
@@ -255,7 +483,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200 font-medium">
               <span className="text-xs">💰</span>
-              <span>Loss Prevented</span>
+              <span>{t.lossPrevented || 'Loss Prevented'}</span>
             </div>
           </div>
         </div>
@@ -270,7 +498,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
         <div className="flex items-center justify-between relative z-10">
           <span className="text-[11px] font-bold tracking-widest uppercase text-amber-100/90 font-mono">
-            WEATHER RISK
+            {t.weatherRiskTitle || 'WEATHER RISK'}
           </span>
           <span className="bg-white/25 backdrop-blur-xs border border-white/20 text-white text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow-xs">
             HIGH
@@ -301,263 +529,35 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
           <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
             <div className="text-sm mb-0.5">💧</div>
             <div className="text-base sm:text-lg font-bold text-white leading-tight">78%</div>
-            <div className="text-[10px] text-amber-100/80 font-medium">Humidity</div>
+            <div className="text-[10px] text-amber-100/80 font-medium">{t.relHumidity || 'Humidity'}</div>
           </div>
 
           <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
             <div className="text-sm mb-0.5">💨</div>
             <div className="text-base sm:text-lg font-bold text-white leading-tight">12 km/h</div>
-            <div className="text-[10px] text-amber-100/80 font-medium">Wind</div>
+            <div className="text-[10px] text-amber-100/80 font-medium">{t.windSpeed || 'Wind'}</div>
           </div>
         </div>
 
         <div className="mt-4 pt-3 border-t border-white/15 flex items-start gap-2 relative z-10">
           <AlertCircle className="w-4 h-4 text-amber-200 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-50 leading-relaxed font-medium">
-            High humidity favors fungal spread. Inspect crops early morning.
+            {t.optimalSpraying || 'High humidity favors fungal spread. Inspect crops early morning.'}
           </p>
         </div>
       </div>
 
       {/* ── Field Credibility Badge (Farmer-Exclusive) ── */}
-      {(() => {
-        const score = farmerTrustScore || 72;
-        const credLabel = score >= 75 ? 'Good' : score >= 55 ? 'Fair' : 'Needs Verification';
-        const credColor = score >= 75
-          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-          : score >= 55
-          ? 'bg-amber-50 border-amber-300 text-amber-800'
-          : 'bg-rose-50 border-rose-300 text-rose-800';
-        const barColor = score >= 75 ? 'bg-emerald-500' : score >= 55 ? 'bg-amber-400' : 'bg-rose-500';
-        return (
-          <div id="farmer-credibility" className={`rounded-3xl p-4 sm:p-5 border shadow-sm space-y-3 scroll-mt-24 hover:shadow-md transition-shadow ${credColor}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🏅</span>
-                <h3 className="font-bold text-sm">Field Credibility Rating</h3>
-              </div>
-              <span className={`text-xs font-extrabold px-3 py-1 rounded-full border font-mono ${credColor}`}>
-                {credLabel}
-              </span>
-            </div>
-            <div className="w-full h-2.5 bg-black/10 rounded-full overflow-hidden">
-              <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${score}%` }} />
-            </div>
-            <p className="text-xs leading-relaxed opacity-80">
-              Your credibility improves when Extension Officers confirm your AI diagnoses as accurate field ground-truth. Accurate reports help prioritize your plots for faster field visits.
-            </p>
-          </div>
-        );
-      })()}
+      {CredibilityCard}
 
       {/* ── Field Health Trend — 30-Day SVG Sparkline (Farmer-Exclusive) ── */}
-      {(() => {
-        const activeField = fields[0];
-        const trend = activeField?.healthTrend || [];
-        if (trend.length === 0) return null;
-
-        const W = 300, H = 72, PAD = 8;
-        const scores = trend.map(t => t.score);
-        const minS = Math.min(...scores), maxS = Math.max(...scores);
-        const range = maxS - minS || 1;
-
-        const pts = trend.map((t, i) => {
-          const x = PAD + ((i / (trend.length - 1)) * (W - 2 * PAD));
-          const y = H - PAD - ((t.score - minS) / range) * (H - 2 * PAD);
-          return `${x.toFixed(1)},${y.toFixed(1)}`;
-        });
-
-        const latestScore = scores[scores.length - 1];
-        const trendColor = latestScore >= 80 ? '#10b981' : latestScore >= 65 ? '#f59e0b' : '#ef4444';
-
-        return (
-          <div id="farmer-fields" className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200 scroll-mt-24 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="text-base">📈</span>
-                <h3 className="font-bold text-sm text-slate-900">Field Health Trend — 30 Days</h3>
-              </div>
-              <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                {activeField?.name?.replace('[DEMO / BASELINE] ', '')}
-              </span>
-            </div>
-            <div className="mt-3">
-              <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-20 rounded-xl">
-                {/* Grid lines */}
-                {[25, 50, 75].map(pct => {
-                  const y = H - PAD - ((pct - minS) / range) * (H - 2 * PAD);
-                  if (y < PAD || y > H - PAD) return null;
-                  return <line key={pct} x1={PAD} y1={y} x2={W - PAD} y2={y} stroke="#e2e8f0" strokeWidth="0.5" />;
-                })}
-                {/* Area fill */}
-                <defs>
-                  <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={trendColor} stopOpacity="0.25" />
-                    <stop offset="100%" stopColor={trendColor} stopOpacity="0.02" />
-                  </linearGradient>
-                </defs>
-                <polygon
-                  points={`${PAD},${H - PAD} ${pts.join(' ')} ${W - PAD},${H - PAD}`}
-                  fill="url(#sparkFill)"
-                />
-                {/* Line */}
-                <polyline points={pts.join(' ')} fill="none" stroke={trendColor} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-                {/* Latest dot */}
-                <circle cx={pts[pts.length - 1].split(',')[0]} cy={pts[pts.length - 1].split(',')[1]} r="3" fill={trendColor} />
-              </svg>
-              <div className="flex justify-between text-[9px] text-slate-400 font-mono mt-1 px-1">
-                <span>30d ago</span>
-                <span className="font-bold text-slate-600">Today: <span style={{ color: trendColor }}>{latestScore}%</span></span>
-                <span>Today</span>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {HealthTrendCard}
 
       {/* ── PHI Compliance Tracker (Farmer-Exclusive) ── */}
-      {(() => {
-        const activeField = fields[0];
-        if (!activeField?.lastSprayDate || !activeField?.phiDays) return null;
+      {PhiTrackerCard}
 
-        const lastSpray = new Date(activeField.lastSprayDate);
-        const daysSinceSpray = Math.round((Date.now() - lastSpray.getTime()) / 86400000);
-        const daysUntilSafe = Math.max(0, activeField.phiDays - daysSinceSpray);
-        const isHarvestSafe = daysUntilSafe === 0;
-        const isNearPHI = daysUntilSafe <= 5 && daysUntilSafe > 0;
-
-        const sprayLabel = lastSpray.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-        const phiColor = isHarvestSafe
-          ? 'border-emerald-200 bg-emerald-50'
-          : isNearPHI
-          ? 'border-amber-300 bg-amber-50'
-          : 'border-rose-200 bg-rose-50';
-        const phiStatusColor = isHarvestSafe ? 'text-emerald-700' : isNearPHI ? 'text-amber-700' : 'text-rose-700';
-        const phiBarColor = isHarvestSafe ? 'bg-emerald-500' : isNearPHI ? 'bg-amber-400' : 'bg-rose-500';
-        const phiPct = Math.round((daysSinceSpray / activeField.phiDays) * 100);
-
-        return (
-          <div id="farmer-phi" className={`rounded-3xl p-4 sm:p-5 border shadow-sm scroll-mt-24 space-y-3 hover:shadow-md transition-shadow ${phiColor}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-base">🛡️</span>
-                <h3 className="font-bold text-sm text-slate-900">PHI Compliance Tracker</h3>
-              </div>
-              <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full border font-mono ${
-                isHarvestSafe ? 'bg-emerald-100 border-emerald-300 text-emerald-800' :
-                isNearPHI ? 'bg-amber-100 border-amber-300 text-amber-800' :
-                'bg-rose-100 border-rose-300 text-rose-800'
-              }`}>
-                {isHarvestSafe ? '✅ Safe to Harvest' : isNearPHI ? `⚠️ ${daysUntilSafe}d Remaining` : `🚫 Do Not Harvest (${daysUntilSafe}d)`}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="bg-white/70 rounded-2xl p-3 border border-black/5">
-                <span className="text-slate-500 block text-[10px] uppercase tracking-wider font-bold">Last Spray</span>
-                <span className="font-bold text-slate-900 block mt-0.5">{sprayLabel}</span>
-                <span className="text-slate-500 text-[10px]">{daysSinceSpray} days ago</span>
-              </div>
-              <div className="bg-white/70 rounded-2xl p-3 border border-black/5">
-                <span className="text-slate-500 block text-[10px] uppercase tracking-wider font-bold">Chemical</span>
-                <span className="font-bold text-slate-800 block mt-0.5 leading-tight text-[11px]">{activeField.lastSprayChemical}</span>
-                <span className="text-slate-500 text-[10px]">PHI: {activeField.phiDays} days</span>
-              </div>
-            </div>
-
-            {/* PHI progress bar */}
-            <div>
-              <div className="flex justify-between text-[10px] text-slate-500 mb-1">
-                <span>Spray date</span>
-                <span className={`font-bold ${phiStatusColor}`}>
-                  {isHarvestSafe ? 'PHI complete — harvest safe' : `${daysUntilSafe} days until safe harvest`}
-                </span>
-                <span>PHI end</span>
-              </div>
-              <div className="w-full h-3 bg-black/10 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${phiBarColor}`}
-                  style={{ width: `${Math.min(100, phiPct)}%` }}
-                />
-              </div>
-            </div>
-
-            <p className="text-[10px] text-slate-500 italic">
-              Pre-Harvest Interval (PHI) compliance per CIBRC label guidelines. Do not harvest produce before PHI expires.
-            </p>
-          </div>
-        );
-      })()}
-
-      {/* ── Nearest Agri-Input Store Stock (Farmer-Exclusive, cross-linked from Govt buffer data) ── */}
-      {(() => {
-        const activeField = fields[0];
-        const latestDisease = (activeField?.diseaseHistory?.[0] || '').toLowerCase();
-
-        // Cross-link from Govt supply chain data — relevant molecules for current disease
-        const govtStocks = [
-          { molecule: 'Copper Oxychloride 50 WP', stockPct: 84, relevance: ['blight', 'downy', 'bacterial', 'canker', 'spot'] },
-          { molecule: 'Trichoderma viride 2% WP', stockPct: 72, relevance: ['soil', 'rot', 'wilt', 'fusarium'] },
-          { molecule: 'Chlorantraniliprole 18.5 SC', stockPct: 28, relevance: ['bollworm', 'moth', 'larva', 'borer'] },
-          { molecule: 'Beauveria bassiana 1.15% WP', stockPct: 65, relevance: ['whitefly', 'thrips', 'aphid', 'mite'] },
-        ];
-
-        const relevant = govtStocks.filter(s =>
-          s.relevance.some(kw => latestDisease.includes(kw))
-        );
-        const display = relevant.length >= 2 ? relevant.slice(0, 3) : govtStocks.slice(0, 3);
-
-        return (
-          <div id="farmer-store" className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm scroll-mt-24 space-y-3 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="text-base">🏪</span>
-                <h3 className="font-bold text-sm text-slate-900">Nearest Agri-Input Store Stock</h3>
-              </div>
-              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-mono">
-                DEMO / BASELINE — Govt Supply Chain Data
-              </span>
-            </div>
-
-            <p className="text-[10px] text-slate-500">
-              Agri-chemical availability at district buffer warehouses — cross-linked from Government stockpile monitor. Stock levels updated by Agriculture Department (DEMO).
-            </p>
-
-            <div className="space-y-2">
-              {display.map((item, idx) => {
-                const isLow = item.stockPct <= 28;
-                return (
-                  <div key={idx} className={`flex items-center justify-between p-2.5 rounded-2xl text-xs border ${
-                    isLow ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'
-                  }`}>
-                    <div>
-                      <span className="font-bold text-slate-900 block">{item.molecule}</span>
-                      {isLow && <span className="text-[10px] text-rose-700 font-bold">🚨 Low stock — check alternate supplier</span>}
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                        isLow ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        {item.stockPct}%
-                      </span>
-                      <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${isLow ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                          style={{ width: `${item.stockPct}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <p className="text-[10px] text-slate-400 italic">
-              Showing top-3 chemicals relevant to your current field disease profile. Contact your nearest Krishi Kendra for purchase.
-            </p>
-          </div>
-        );
-      })()}
+      {/* ── Nearest Agri-Input Store Stock (Farmer-Exclusive) ── */}
+      {NearestStoreCard}
 
       {/* Photo 3: 4 Quick Actions (2x2 Grid) */}
       <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
@@ -569,10 +569,10 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             <Camera className="w-5 h-5 text-white" />
           </div>
           <h3 className="font-semibold text-base sm:text-lg text-white leading-tight">
-            Scan Crop
+            {t.quickScan || 'Scan Crop'}
           </h3>
           <p className="mt-1 text-xs text-emerald-100/80 line-clamp-1">
-            Upload or capture photo
+            {t.quickScanDesc || 'Instant PyTorch diagnostic'}
           </p>
           <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
         </button>
@@ -585,10 +585,10 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             🗺️
           </div>
           <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
-            Hotspot Map
+            {t.quickHotspots || 'Hotspot Map'}
           </h3>
           <p className="mt-1 text-xs text-stone-500 line-clamp-1">
-            3 active alerts nearby
+            {t.quickHotspotsDesc || '3 active alerts nearby'}
           </p>
         </button>
 
@@ -600,10 +600,10 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             📋
           </div>
           <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
-            Advisories
+            {t.quickAdvisories || 'Advisories'}
           </h3>
           <p className="mt-1 text-xs text-stone-500 line-clamp-1">
-            2 new expert guides
+            {t.quickAdvisoriesDesc || '2 new expert guides'}
           </p>
         </button>
 
@@ -615,16 +615,17 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             🔬
           </div>
           <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
-            Lab Referral
+            {t.quickLab || 'Lab Referral'}
           </h3>
           <p className="mt-1 text-xs text-stone-500 line-clamp-1">
-            Book diagnostics
+            {t.quickLabDesc || 'KVK PCR sample test'}
           </p>
         </button>
       </div>
 
       {/* Dynamic Field Health Action Timeline */}
       <FieldHealthTimeline
+        currentLang={currentLang}
         timelineStep={latestDiagnosis?.timelineStep || (recentScans[0]?.timelineStep || 'Scan Completed')}
         priority={latestDiagnosis?.priority || (recentScans[0]?.priority || 'WATCH')}
         timestamp={latestDiagnosis?.timestamp || 'Latest Evidence'}
@@ -911,7 +912,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
   );
 
   return (
-    <div className="min-h-screen bg-[#F6F1EA] py-6 sm:py-10">
+    <div className="min-h-screen bg-[#F6F1EA]">
       {selectedField && (
         <FieldHealthPassport
           field={selectedField}
@@ -924,40 +925,26 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
         />
       )}
 
-
+      {/* Signature KrushiRaksha Hero Experience */}
+      {viewMode !== 'mobile' && (
+        <KrushiHeroSection
+          currentLang={currentLang}
+          onNavigate={onNavigate}
+          isFarmerDashboard={true}
+        />
+      )}
 
       {/* Mobile Device Frame View vs Full Desktop View */}
       {viewMode === 'mobile' ? (
-        <DeviceFrame>
-          <div className="p-4 bg-[#FAF6F0] min-h-full">
-            {DashboardCore}
-          </div>
-        </DeviceFrame>
-      ) : (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* Top Banner */}
-          <div className="mb-6 rounded-2xl bg-gradient-to-r from-[#164E35] to-[#1E5137] text-white p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm border border-emerald-900/30">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest bg-amber-400 text-stone-900 px-2 py-0.5 rounded font-mono">
-                  SIH 2026 #26131
-                </span>
-                <span className="text-xs font-semibold text-emerald-200">
-                  Government of Maharashtra · Maharashtra State Innovation Society
-                </span>
-              </div>
-              <h2 className="font-serif-display text-xl sm:text-2xl font-bold mt-1 tracking-tight">
-                Farmer Workspace & Crop Health Monitoring Hub
-              </h2>
+        <div className="py-6 sm:py-10">
+          <DeviceFrame>
+            <div className="p-4 bg-[#FAF6F0] min-h-full">
+              {DashboardCore}
             </div>
-            <button
-              onClick={() => onNavigate('diagnosis')}
-              className="self-start sm:self-center shrink-0 px-4 py-2 rounded-xl bg-white text-[#164E35] font-bold text-xs hover:bg-emerald-50 transition shadow-xs cursor-pointer"
-            >
-              Scan Diseased Crop →
-            </button>
-          </div>
+          </DeviceFrame>
+        </div>
+      ) : (
+        <div id="farmer-workspace-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
 
           {/* 2-Column Responsive Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -969,7 +956,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                 <div className="absolute -top-24 -right-24 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
                 <div className="relative z-10">
                   <p className="text-emerald-200/90 text-sm font-medium tracking-wide">
-                    Good morning,
+                    {t.greeting || 'Good morning,'}
                   </p>
                   <h1 className="font-serif-display text-3xl sm:text-4xl font-bold tracking-tight text-white mt-0.5 mb-1.5 drop-shadow-xs">
                     {farmer.name}
@@ -987,22 +974,22 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                     className="rounded-2xl bg-[#245E41]/80 hover:bg-[#245E41] backdrop-blur-xs border border-white/10 p-3.5 transition cursor-pointer group shadow-xs"
                   >
                     <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                      {farmer.totalScans}
+                      {animatedTotalScans}
                     </div>
                     <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-100/80 font-medium">
                       <span className="text-xs group-hover:scale-110 transition-transform">📷</span>
-                      <span>Total Scans</span>
+                      <span>{t.totalScans || 'Total Scans'}</span>
                     </div>
                   </div>
 
                   <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
                     <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center justify-between">
-                      <span>{farmer.issuesDetected}</span>
+                      <span>{animatedIssuesDetected}</span>
                       <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping opacity-75" />
                     </div>
                     <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200/90 font-medium">
                       <span className="text-xs">⚠️</span>
-                      <span>Issues Detected</span>
+                      <span>{t.issuesDetected || 'Issues Detected'}</span>
                     </div>
                   </div>
 
@@ -1012,17 +999,17 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                     </div>
                     <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-200 font-medium">
                       <span className="text-xs">✅</span>
-                      <span>Resolved</span>
+                      <span>{t.resolved || 'Resolved'}</span>
                     </div>
                   </div>
 
                   <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
                     <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                      ₹{farmer.lossPrevented.toLocaleString('en-IN')}
+                      ₹{animatedLossPrevented.toLocaleString('en-IN')}
                     </div>
                     <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200 font-medium">
                       <span className="text-xs">💰</span>
-                      <span>Loss Prevented</span>
+                      <span>{t.lossPrevented || 'Loss Prevented'}</span>
                     </div>
                   </div>
                 </div>
@@ -1038,10 +1025,10 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                     <Camera className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="font-semibold text-base sm:text-lg text-white leading-tight">
-                    Scan Crop
+                    {t.quickScan || 'Scan Crop'}
                   </h3>
                   <p className="mt-1 text-xs text-emerald-100/80 line-clamp-1">
-                    Upload or capture photo
+                    {t.quickScanDesc || 'Instant PyTorch diagnostic'}
                   </p>
                   <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 </button>
@@ -1054,10 +1041,10 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                     🗺️
                   </div>
                   <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
-                    Hotspot Map
+                    {t.quickHotspots || 'Hotspot Map'}
                   </h3>
                   <p className="mt-1 text-xs text-stone-500 line-clamp-1">
-                    3 active alerts nearby
+                    {t.quickHotspotsDesc || '3 active alerts nearby'}
                   </p>
                 </button>
 
@@ -1069,10 +1056,10 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                     📋
                   </div>
                   <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
-                    Advisories
+                    {t.quickAdvisories || 'Advisories'}
                   </h3>
                   <p className="mt-1 text-xs text-stone-500 line-clamp-1">
-                    2 new expert guides
+                    {t.quickAdvisoriesDesc || '2 new expert guides'}
                   </p>
                 </button>
 
@@ -1084,26 +1071,26 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                     🔬
                   </div>
                   <h3 className="font-semibold text-base sm:text-lg text-stone-900 leading-tight">
-                    Lab Referral
+                    {t.quickLab || 'Lab Referral'}
                   </h3>
                   <p className="mt-1 text-xs text-stone-500 line-clamp-1">
-                    Book diagnostics
+                    {t.quickLabDesc || 'KVK PCR sample test'}
                   </p>
                 </button>
               </div>
 
               {/* My Fields Section */}
-              <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
+              <div id="farmer-fields" className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80 scroll-mt-24">
                 <div className="flex items-center justify-between pb-3 border-b border-stone-100">
                   <h2 className="font-serif-display text-lg font-bold text-stone-900">
-                    My Fields
+                    {t.registeredFields || 'My Fields'}
                   </h2>
                   <button
                     onClick={() => setIsAddFieldOpen(true)}
                     className="rounded-full bg-[#1E5137] hover:bg-[#164E35] text-white text-xs font-semibold px-3 py-1.5 transition flex items-center gap-1 shadow-xs cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>+ Add Field</span>
+                    <span>{t.addField || '+ Add Field'}</span>
                   </button>
                 </div>
 
@@ -1184,7 +1171,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
                 <div className="flex items-center justify-between relative z-10">
                   <span className="text-[11px] font-bold tracking-widest uppercase text-amber-100/90 font-mono">
-                    WEATHER RISK
+                    {t.weatherRiskTitle || 'WEATHER RISK'}
                   </span>
                   <span className="bg-white/25 backdrop-blur-xs border border-white/20 text-white text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full tracking-wider shadow-xs">
                     HIGH
@@ -1215,26 +1202,39 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                   <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
                     <div className="text-sm mb-0.5">💧</div>
                     <div className="text-base sm:text-lg font-bold text-white leading-tight">78%</div>
-                    <div className="text-[10px] text-amber-100/80 font-medium">Humidity</div>
+                    <div className="text-[10px] text-amber-100/80 font-medium">{t.relHumidity || 'Humidity'}</div>
                   </div>
 
                   <div className="rounded-2xl bg-black/15 backdrop-blur-xs border border-white/10 p-2.5 text-center">
                     <div className="text-sm mb-0.5">💨</div>
                     <div className="text-base sm:text-lg font-bold text-white leading-tight">12 km/h</div>
-                    <div className="text-[10px] text-amber-100/80 font-medium">Wind</div>
+                    <div className="text-[10px] text-amber-100/80 font-medium">{t.windSpeed || 'Wind'}</div>
                   </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-white/15 flex items-start gap-2 relative z-10">
                   <AlertCircle className="w-4 h-4 text-amber-200 shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-50 leading-relaxed font-medium">
-                    High humidity favors fungal spread. Inspect crops early morning.
+                    {t.optimalSpraying || 'High humidity favors fungal spread. Inspect crops early morning.'}
                   </p>
                 </div>
               </div>
 
+              {/* ── Field Credibility Badge (Farmer-Exclusive) ── */}
+              {CredibilityCard}
+
+              {/* ── Field Health Trend — 30-Day SVG Sparkline (Farmer-Exclusive) ── */}
+              {HealthTrendCard}
+
+              {/* ── PHI Compliance Tracker (Farmer-Exclusive) ── */}
+              {PhiTrackerCard}
+
+              {/* ── Nearest Agri-Input Store Stock (Farmer-Exclusive) ── */}
+              {NearestStoreCard}
+
               {/* Dynamic Field Health Action Timeline */}
               <FieldHealthTimeline
+                currentLang={currentLang}
                 timelineStep={latestDiagnosis?.timelineStep || (recentScans[0]?.timelineStep || 'Scan Completed')}
                 priority={latestDiagnosis?.priority || (recentScans[0]?.priority || 'WATCH')}
                 timestamp={latestDiagnosis?.timestamp || 'Latest Evidence'}

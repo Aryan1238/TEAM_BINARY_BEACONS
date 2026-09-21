@@ -576,13 +576,13 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onRoleChange, onSele
         setClassProbabilities([]);
         setSelectedCase({
           id: 'upload-rejected',
-          title: 'Image Rejected (Quality Check Failed)',
+          title: result.errorCode === 'BACKEND_CONNECTION_ERROR' ? 'Inference Backend Offline' : 'Image Rejected (Quality Check Failed)',
           imageUrl: result.previewUrl,
           gradcamImage: null,
           confidence: 0
         });
-        setAiStatus(`⚠️ Photo Rejected: ${result.message}`);
-        setAiSource('Image Pre-Inference Validation Gate');
+        setAiStatus(result.errorCode === 'BACKEND_CONNECTION_ERROR' ? `⚠️ Backend Connection Failed: Service Offline` : `⚠️ Photo Rejected: ${result.message}`);
+        setAiSource(result.source || 'PyTorch Inference Service');
         return;
       }
 
@@ -1215,49 +1215,72 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onRoleChange, onSele
 
                 {/* Main Scanning Viewport */}
                 {validationError ? (
-                  <div className="rounded-2xl p-5 sm:p-6 bg-rose-950/90 border-2 border-rose-500 text-white space-y-4 shadow-xl">
+                  <div className={`rounded-2xl p-5 sm:p-6 text-white space-y-4 shadow-xl border-2 ${
+                    validationError.code === 'BACKEND_CONNECTION_ERROR'
+                      ? 'bg-amber-950/95 border-amber-500'
+                      : 'bg-rose-950/90 border-rose-500'
+                  }`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center space-x-2.5">
-                        <AlertTriangle className="w-6 h-6 text-rose-400 shrink-0" />
+                        <AlertTriangle className={`w-6 h-6 shrink-0 ${
+                          validationError.code === 'BACKEND_CONNECTION_ERROR' ? 'text-amber-400' : 'text-rose-400'
+                        }`} />
                         <div>
-                          <h3 className="text-sm font-extrabold tracking-wider text-rose-200 font-mono uppercase">
-                            Image Rejected by Quality Validation Gate
+                          <h3 className={`text-sm font-extrabold tracking-wider font-mono uppercase ${
+                            validationError.code === 'BACKEND_CONNECTION_ERROR' ? 'text-amber-200' : 'text-rose-200'
+                          }`}>
+                            {validationError.code === 'BACKEND_CONNECTION_ERROR'
+                              ? 'Inference Backend Unavailable'
+                              : 'Image Rejected by Quality Validation Gate'}
                           </h3>
-                          <span className="text-[11px] px-2 py-0.5 rounded bg-rose-900 border border-rose-600 font-mono text-rose-300">
+                          <span className={`text-[11px] px-2 py-0.5 rounded font-mono border ${
+                            validationError.code === 'BACKEND_CONNECTION_ERROR'
+                              ? 'bg-amber-900 border-amber-600 text-amber-300'
+                              : 'bg-rose-900 border-rose-600 text-rose-300'
+                          }`}>
                             Status: {validationError.code}
                           </span>
                         </div>
                       </div>
                       <button
                         onClick={() => { setValidationError(null); setSelectedCase(null); }}
-                        className="text-xs text-rose-300 hover:text-white px-2.5 py-1 rounded-lg bg-rose-900/60 border border-rose-700/50 cursor-pointer"
+                        className="text-xs text-slate-300 hover:text-white px-2.5 py-1 rounded-lg bg-slate-900/60 border border-slate-700/50 cursor-pointer"
                       >
                         ✕ Dismiss
                       </button>
                     </div>
 
-                    <p className="text-xs text-rose-100 font-semibold leading-relaxed">
+                    <p className="text-xs font-semibold leading-relaxed text-slate-100">
                       {validationError.message}
                     </p>
 
-                    <div className="p-3.5 bg-rose-900/50 rounded-xl border border-rose-700/70 text-xs text-rose-200 space-y-1.5">
-                      <span className="font-bold text-amber-300 block">📸 Instructions to Retake Photo:</span>
-                      {validationError.code === 'IMAGE_TOO_BLURRY' && (
-                        <p>• Hold the camera steady, tap to autofocus directly on leaf lesions, and avoid breezy foliage motion.</p>
-                      )}
-                      {validationError.code === 'IMAGE_TOO_DARK' && (
-                        <p>• Lighting is too dim. Please photograph the crop leaf outdoors under bright natural daylight or use a flashlight.</p>
-                      )}
-                      {validationError.code === 'IMAGE_OVEREXPOSED' && (
-                        <p>• Too much glare or direct flash. Angle the camera slightly away from intense direct reflection.</p>
-                      )}
-                      {validationError.code === 'IMAGE_TOO_SMALL' && (
-                        <p>• Resolution is below 100x100 pixels. Please take a closer, uncompressed photo of the plant foliage.</p>
-                      )}
-                      {!['IMAGE_TOO_BLURRY', 'IMAGE_TOO_DARK', 'IMAGE_OVEREXPOSED', 'IMAGE_TOO_SMALL'].includes(validationError.code) && (
-                        <p>• Upload a standard, clear JPG, PNG, or WEBP photo showing genuine foliar crop symptoms.</p>
-                      )}
-                    </div>
+                    {validationError.code === 'BACKEND_CONNECTION_ERROR' ? (
+                      <div className="p-3.5 bg-amber-900/40 rounded-xl border border-amber-700/60 text-xs text-amber-200 space-y-2">
+                        <span className="font-bold text-amber-300 block">ℹ️ How to Connect Inference Service:</span>
+                        <p>• <span className="font-semibold text-white">Local Development:</span> Start your FastAPI backend via <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-300">python -m uvicorn main:app --port 8000</code> in the <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-300">backend/</code> directory.</p>
+                        <p>• <span className="font-semibold text-white">Production Cloud:</span> Ensure <code className="bg-black/40 px-1.5 py-0.5 rounded text-amber-300">VITE_BACKEND_URL</code> is set in repository variables or GitHub Secrets to point to your live cloud deployment (e.g. Render / Cloud Run).</p>
+                        <p className="text-[11px] text-amber-300/80 italic">Note: KrushiRaksha runs authentic neural inference on PyTorch EfficientNet-B0 and does not invent fake diagnosis results when the model service is offline.</p>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 bg-rose-900/50 rounded-xl border border-rose-700/70 text-xs text-rose-200 space-y-1.5">
+                        <span className="font-bold text-amber-300 block">📸 Instructions to Retake Photo:</span>
+                        {validationError.code === 'IMAGE_TOO_BLURRY' && (
+                          <p>• Hold the camera steady, tap to autofocus directly on leaf lesions, and avoid breezy foliage motion.</p>
+                        )}
+                        {validationError.code === 'IMAGE_TOO_DARK' && (
+                          <p>• Lighting is too dim. Please photograph the crop leaf outdoors under bright natural daylight or use a flashlight.</p>
+                        )}
+                        {validationError.code === 'IMAGE_OVEREXPOSED' && (
+                          <p>• Too much glare or direct flash. Angle the camera slightly away from intense direct reflection.</p>
+                        )}
+                        {validationError.code === 'IMAGE_TOO_SMALL' && (
+                          <p>• Resolution is below 100x100 pixels. Please take a closer, uncompressed photo of the plant foliage.</p>
+                        )}
+                        {!['IMAGE_TOO_BLURRY', 'IMAGE_TOO_DARK', 'IMAGE_OVEREXPOSED', 'IMAGE_TOO_SMALL'].includes(validationError.code) && (
+                          <p>• Upload a standard, clear JPG, PNG, or WEBP photo showing genuine foliar crop symptoms.</p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex items-center space-x-3 pt-1">
                       <label className="bg-amber-400 hover:bg-amber-300 text-emerald-950 px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center space-x-2 cursor-pointer shadow-md transition-transform hover:scale-102">
@@ -1760,18 +1783,30 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onRoleChange, onSele
               {/* If validation rejected */}
               {validationError ? (
                 <div className="py-14 px-4 text-center space-y-4">
-                  <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center mx-auto text-rose-600">
-                    <AlertTriangle className="w-8 h-8 text-rose-500" />
+                  <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto ${
+                    validationError.code === 'BACKEND_CONNECTION_ERROR'
+                      ? 'bg-amber-50 border-amber-200 text-amber-600'
+                      : 'bg-rose-50 border-rose-200 text-rose-600'
+                  }`}>
+                    <AlertTriangle className="w-8 h-8" />
                   </div>
                   <div className="space-y-1.5">
-                    <span className="text-[10px] bg-rose-100 border border-rose-300 text-rose-800 px-3 py-1 rounded-full font-mono font-bold uppercase">
-                      Diagnosis Halted ({validationError.code})
+                    <span className={`text-[10px] px-3 py-1 rounded-full font-mono font-bold uppercase border ${
+                      validationError.code === 'BACKEND_CONNECTION_ERROR'
+                        ? 'bg-amber-100 border-amber-300 text-amber-800'
+                        : 'bg-rose-100 border-rose-300 text-rose-800'
+                    }`}>
+                      {validationError.code === 'BACKEND_CONNECTION_ERROR' ? 'Backend Offline' : `Diagnosis Halted (${validationError.code})`}
                     </span>
                     <h3 className="text-base font-extrabold text-slate-800">
-                      Pre-Inference Validation Rejection
+                      {validationError.code === 'BACKEND_CONNECTION_ERROR'
+                        ? 'Inference Backend Unreachable'
+                        : 'Pre-Inference Validation Rejection'}
                     </h3>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                      Neural model inference was not executed because the uploaded photo did not meet optical quality criteria. Please review instructions on the left and upload a clearer photo.
+                      {validationError.code === 'BACKEND_CONNECTION_ERROR'
+                        ? 'Neural model inference could not be executed because the PyTorch backend endpoint is currently offline. Review instructions on the left to connect or start the service.'
+                        : 'Neural model inference was not executed because the uploaded photo did not meet optical quality criteria. Please review instructions on the left and upload a clearer photo.'}
                     </p>
                   </div>
                 </div>
