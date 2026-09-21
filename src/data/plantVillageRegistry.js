@@ -693,3 +693,39 @@ export const getPlantVillageDiagnosisRecord = (classKey, confidencePct = 95.0) =
     }
   };
 };
+
+/**
+ * Parse standard PlantVillage class name into Clean Crop Name and Disease Name
+ */
+export const parsePlantVillageClass = (classKey) => {
+  if (!classKey) return { crop: 'Crop Leaf', disease: 'Leaf Disease', isHealthy: false };
+
+  if (PLANTVILLAGE_DISEASE_REGISTRY[classKey]) {
+    const reg = PLANTVILLAGE_DISEASE_REGISTRY[classKey];
+    return {
+      crop: reg.crop,
+      disease: reg.name,
+      isHealthy: reg.severity === 'Healthy' || reg.name.toLowerCase().includes('healthy')
+    };
+  }
+
+  if (classKey.includes('___')) {
+    const parts = classKey.split('___');
+    const rawCrop = parts[0].replace(/_/g, ' ').replace('(maize)', '').trim();
+    const rawDisease = parts[1].replace(/_/g, ' ').trim();
+
+    const isHealthy = rawDisease.toLowerCase().includes('healthy');
+    const diseaseTitle = isHealthy ? `Healthy ${rawCrop}` : rawDisease;
+    return {
+      crop: rawCrop.charAt(0).toUpperCase() + rawCrop.slice(1),
+      disease: diseaseTitle.charAt(0).toUpperCase() + diseaseTitle.slice(1),
+      isHealthy
+    };
+  }
+
+  return {
+    crop: 'Crop Leaf',
+    disease: classKey.replace(/_/g, ' '),
+    isHealthy: classKey.toLowerCase().includes('healthy')
+  };
+};

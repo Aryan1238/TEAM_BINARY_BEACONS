@@ -1,97 +1,174 @@
 import React, { useState } from 'react';
-import { 
-  Camera, 
-  MapPin, 
-  Plus, 
+import {
+  Camera,
+  MapPin,
+  Plus,
   AlertCircle,
   Cloud,
   Sprout,
   Phone,
   ShieldCheck,
-  Award
+  Award,
+  Sparkles,
+  CalendarDays,
+  ArrowRight,
+  CheckCircle2,
+  FileText
 } from 'lucide-react';
 import { LabReferralModal } from './LabReferralModal';
 import { AddFieldModal } from './AddFieldModal';
 import { DeviceFrame } from './DeviceFrame';
 import { FloatingViewToggle } from './FloatingViewToggle';
+import { FieldHealthPassport } from './FieldHealthPassport';
+import { useDiagnosis } from '../context/DiagnosisContext';
+import { cropDiseases } from '../data/cropDiseases';
+
+// Field Health Action Timeline Component
+const FieldHealthTimeline = ({ timelineStep = 'Scan Completed', priority = 'WATCH', timestamp = 'Just now' }) => {
+  const steps = [
+    { key: 'Scan Completed', label: 'Scan Completed', desc: 'PyTorch inference pass' },
+    { key: 'Disease Identified', label: 'Disease Identified', desc: 'Foliar pathology match' },
+    { key: 'Priority Assigned', label: 'Priority Assigned', desc: priority },
+    { key: 'Advisory Generated', label: 'Advisory Generated', desc: 'CIBRC IPM rules' },
+    { key: 'Follow-up Required', label: 'Follow-up / Monitored', desc: 'Field observation' }
+  ];
+
+  const currentIdx = steps.findIndex(s => s.key === timelineStep) !== -1
+    ? steps.findIndex(s => s.key === timelineStep)
+    : 3;
+
+  return (
+    <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
+      <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
+          <h3 className="font-serif-display font-bold text-stone-900 text-sm sm:text-base">
+            Field Health Action Timeline
+          </h3>
+        </div>
+        <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">
+          {timestamp}
+        </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-5 gap-1 sm:gap-2">
+        {steps.map((step, idx) => {
+          const isCompleted = idx <= currentIdx;
+          const isCurrent = idx === currentIdx;
+
+          return (
+            <div key={step.key} className="flex flex-col items-center text-center">
+              <div
+                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-2xs ${
+                  isCurrent
+                    ? priority === 'CRITICAL'
+                      ? 'bg-rose-600 text-white ring-4 ring-rose-100'
+                      : priority === 'HIGH'
+                      ? 'bg-orange-500 text-white ring-4 ring-orange-100'
+                      : 'bg-[#0F5137] text-white ring-4 ring-emerald-100'
+                    : isCompleted
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-stone-100 text-stone-400 border border-stone-200'
+                }`}
+              >
+                {isCompleted ? '✓' : idx + 1}
+              </div>
+
+              <p className={`mt-2 text-[10px] sm:text-xs font-bold leading-tight ${
+                isCompleted ? 'text-stone-900' : 'text-stone-400'
+              }`}>
+                {step.label}
+              </p>
+
+              <p className="mt-0.5 text-[9px] text-stone-500 hidden sm:block">
+                {step.desc}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// "Why This Case Is Prioritized" Explainability Component
+const WhyPrioritizedCard = ({ priority = 'WATCH', reasons = [], nextAction = '' }) => {
+  if (!reasons || reasons.length === 0) return null;
+
+  return (
+    <div className={`rounded-3xl p-4 sm:p-5 border shadow-sm transition-all ${
+      priority === 'CRITICAL'
+        ? 'bg-rose-50/80 border-rose-200 text-rose-950'
+        : priority === 'HIGH'
+        ? 'bg-orange-50/80 border-orange-200 text-orange-950'
+        : 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+    }`}>
+      <div className="flex items-center justify-between pb-2 border-b border-black/5">
+        <div className="flex items-center gap-2">
+          <span className="text-base">{priority === 'CRITICAL' || priority === 'HIGH' ? '⚠️' : '🌿'}</span>
+          <h4 className="font-serif-display font-bold text-xs sm:text-sm uppercase tracking-wider font-mono">
+            Why This Case Is Prioritized
+          </h4>
+        </div>
+        <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${
+          priority === 'CRITICAL'
+            ? 'bg-rose-100 text-rose-800 border-rose-300'
+            : priority === 'HIGH'
+            ? 'bg-orange-100 text-orange-800 border-orange-300'
+            : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+        }`}>
+          {priority} Priority
+        </span>
+      </div>
+
+      <ul className="mt-3 space-y-1.5 text-xs font-medium">
+        {reasons.map((reason, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span className="text-emerald-700 mt-0.5 shrink-0">•</span>
+            <span className="leading-relaxed">{reason}</span>
+          </li>
+        ))}
+      </ul>
+
+      {nextAction && (
+        <div className="mt-3 pt-2.5 border-t border-black/5 flex items-start gap-2 text-xs font-semibold">
+          <span className="text-stone-500 uppercase tracking-wider text-[10px]">Action:</span>
+          <span>{nextAction}</span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const FarmerDashboard = ({ currentLang, onNavigate }) => {
   const [viewMode, setViewMode] = useState('website'); // 'website' | 'mobile'
   const [isLabOpen, setIsLabOpen] = useState(false);
   const [isAddFieldOpen, setIsAddFieldOpen] = useState(false);
+  const [farmerAcreage, setFarmerAcreage] = useState(4.5);
 
-  const [farmer, setFarmer] = useState({
+  // Single source of truth from DiagnosisContext
+  const {
+    fields,
+    addField,
+    selectedField,
+    setSelectedField,
+    farmerStats,
+    mergedRecentScans,
+    latestDiagnosis,
+    setSelectedDisease
+  } = useDiagnosis();
+
+  const farmer = {
     name: 'Ramesh Patil',
     location: 'Nashik District, Maharashtra · 4.5 acres under cultivation',
-    acres: 4.5,
-    totalScans: 14,
-    issuesDetected: 6,
-    resolved: 5,
-    lossPrevented: 8200
-  });
+    acres: farmerAcreage,
+    totalScans: farmerStats.totalScans,
+    issuesDetected: farmerStats.issuesDetected,
+    resolved: farmerStats.resolved,
+    lossPrevented: farmerStats.lossPrevented
+  };
 
-  const [fields, setFields] = useState([
-    {
-      id: 'field-1',
-      name: 'North Field – Tomato',
-      crop: 'Tomato (Abhinav F1)',
-      acres: 1.2,
-      status: 'At Risk',
-      imageUrl: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=800&q=80',
-      lastScanned: 'Today, 9:14 AM',
-      healthScore: 72
-    },
-    {
-      id: 'field-2',
-      name: 'South Field – Cotton',
-      crop: 'Cotton (Bt-II)',
-      acres: 2.5,
-      status: 'Healthy',
-      imageUrl: 'https://images.unsplash.com/photo-1594488500257-7945d8b7b75a?auto=format&fit=crop&w=800&q=80',
-      lastScanned: 'Yesterday, 4:30 PM',
-      healthScore: 94
-    },
-    {
-      id: 'field-3',
-      name: 'East Field – Wheat',
-      crop: 'Wheat (Lokwan / Sharbati)',
-      acres: 0.8,
-      status: 'Monitored',
-      imageUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=800&q=80',
-      lastScanned: '3 days ago',
-      healthScore: 86
-    }
-  ]);
-
-  const recentScans = [
-    {
-      id: 'scan-1',
-      crop: 'Tomato',
-      disease: 'Early Blight',
-      confidence: 91,
-      severity: 'High',
-      time: 'Today, 9:14 AM',
-      image: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=400&q=80'
-    },
-    {
-      id: 'scan-2',
-      crop: 'Cotton',
-      disease: 'Bollworm',
-      confidence: 85,
-      severity: 'Medium',
-      time: 'Yesterday',
-      image: 'https://images.unsplash.com/photo-1606041008023-472dfb5e530f?auto=format&fit=crop&w=400&q=80'
-    },
-    {
-      id: 'scan-3',
-      crop: 'Rice',
-      disease: 'Blast Disease',
-      confidence: 78,
-      severity: 'Low',
-      time: 'Aug 20',
-      image: 'https://images.unsplash.com/photo-1536700503339-1e4b06520771?auto=format&fit=crop&w=400&q=80'
-    }
-  ];
+  const recentScans = mergedRecentScans;
 
   const hotspots = [
     { id: 'hs-1', district: 'Nashik', disease: 'Downy Mildew', cases: 34, isCritical: true },
@@ -101,21 +178,18 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
   ];
 
   const handleAddField = (newField) => {
-    setFields((prev) => [...prev, newField]);
-    setFarmer((prev) => ({
-      ...prev,
-      acres: parseFloat((prev.acres + newField.acres).toFixed(1))
-    }));
+    addField(newField);
+    setFarmerAcreage((prev) => parseFloat((prev + newField.acres).toFixed(1)));
   };
 
   // Farmer Dashboard Layout Content
   const DashboardCore = (
     <div className="space-y-5">
-      
+
       {/* Photo 2: Farmer Hero Profile Card (Forest Green) */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#1E5137] to-[#164E35] p-5 sm:p-6 text-white shadow-lg border border-emerald-900/40">
         <div className="absolute -top-24 -right-24 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-        
+
         <div className="relative z-10">
           <p className="text-emerald-200/90 text-sm font-medium tracking-wide">
             Good morning,
@@ -133,7 +207,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
         {/* 4 Stats Grid (2x2) */}
         <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3.5 relative z-10">
-          <div 
+          <div
             onClick={() => onNavigate('diagnosis')}
             className="rounded-2xl bg-[#245E41]/80 hover:bg-[#245E41] backdrop-blur-xs border border-white/10 p-3.5 transition cursor-pointer group shadow-xs"
           >
@@ -180,7 +254,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
       </div>
 
       {/* Photo 2: Weather Risk Card (Terracotta / Amber) */}
-      <div 
+      <div
         onClick={() => onNavigate('weather')}
         className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#D4681E] via-[#C8621A] to-[#B25313] p-5 sm:p-6 text-white shadow-lg border border-amber-800/30 cursor-pointer"
       >
@@ -301,12 +375,31 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
         </button>
       </div>
 
-      {/* Photo 3: Recent Scans */}
+      {/* Dynamic Field Health Action Timeline */}
+      <FieldHealthTimeline
+        timelineStep={latestDiagnosis?.timelineStep || (recentScans[0]?.timelineStep || 'Scan Completed')}
+        priority={latestDiagnosis?.priority || (recentScans[0]?.priority || 'WATCH')}
+        timestamp={latestDiagnosis?.timestamp || 'Latest Evidence'}
+      />
+
+      {/* Dynamic "Why This Case Is Prioritized" Explainability */}
+      <WhyPrioritizedCard
+        priority={latestDiagnosis?.priority || (recentScans[0]?.priority || 'WATCH')}
+        reasons={latestDiagnosis?.priorityReasons || (recentScans[0]?.priorityReasons || [])}
+        nextAction={latestDiagnosis?.recommendedNextAction || (recentScans[0]?.recommendedNextAction || '')}
+      />
+
+      {/* Dynamic Recent Scans */}
       <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
         <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-          <h2 className="font-serif-display text-lg font-bold text-stone-900">
-            Recent Scans
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-serif-display text-lg font-bold text-stone-900">
+              Recent Scans
+            </h2>
+            <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">
+              {recentScans.filter(s => s.isLive).length} Live
+            </span>
+          </div>
           <button
             onClick={() => onNavigate('diagnosis')}
             className="text-amber-800 hover:text-amber-900 text-xs sm:text-sm font-semibold transition hover:underline cursor-pointer"
@@ -330,19 +423,28 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                   />
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <h4 className="font-serif-display font-bold text-stone-900 text-sm sm:text-base truncate">
                       {scan.disease}
                     </h4>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      scan.severity === 'High'
+                      scan.severity === 'High' || scan.priority === 'CRITICAL'
                         ? 'bg-rose-50 text-rose-600 border border-rose-200/80'
-                        : scan.severity === 'Medium'
-                        ? 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                        : scan.severity === 'Medium' || scan.priority === 'HIGH'
+                        ? 'bg-orange-50 text-orange-700 border border-orange-200/80'
                         : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
                     }`}>
-                      {scan.severity}
+                      {scan.severity || scan.priority}
                     </span>
+                    {scan.isLive ? (
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-600 text-white font-mono">
+                        LIVE
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 font-mono">
+                        DEMO
+                      </span>
+                    )}
                   </div>
                   <p className="text-[11px] sm:text-xs text-stone-500 truncate mt-0.5">
                     {scan.crop} · {scan.confidence}% confidence · {scan.time}
@@ -351,7 +453,17 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
               </div>
 
               <button
-                onClick={() => onNavigate('ipm')}
+                onClick={() => {
+                  const matched = cropDiseases.find(d =>
+                    d.name.toLowerCase().includes(scan.disease.toLowerCase()) ||
+                    scan.disease.toLowerCase().includes(d.name.toLowerCase()) ||
+                    d.crop.toLowerCase().includes(scan.crop.toLowerCase())
+                  );
+                  if (matched) {
+                    setSelectedDisease(matched);
+                  }
+                  onNavigate('ipm');
+                }}
                 className="shrink-0 rounded-full px-3.5 py-1 text-xs font-semibold text-stone-700 bg-white border border-stone-300 hover:border-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/40 transition shadow-2xs cursor-pointer"
               >
                 Advisory
@@ -434,7 +546,20 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
         <div className="divide-y divide-stone-100">
           {fields.map((field) => (
-            <div key={field.id} className="py-4 first:pt-4 last:pb-1">
+            <div
+              key={field.id}
+              className="py-4 first:pt-4 last:pb-1 cursor-pointer group"
+              onClick={() => setSelectedField(field)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setSelectedField(field);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open health passport for ${field.name}`}
+            >
               <div className="relative w-full h-32 sm:h-36 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shadow-2xs">
                 <img
                   src={field.imageUrl}
@@ -537,7 +662,20 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
   return (
     <div className="min-h-screen bg-[#F6F1EA] py-6 sm:py-10">
-      
+      {selectedField && (
+        <FieldHealthPassport
+          field={selectedField}
+          recentScans={recentScans}
+          onClose={() => setSelectedField(null)}
+          onNavigate={(destination) => {
+            setSelectedField(null);
+            onNavigate?.(destination);
+          }}
+        />
+      )}
+
+
+
       {/* Mobile Device Frame View vs Full Desktop View */}
       {viewMode === 'mobile' ? (
         <DeviceFrame>
@@ -547,7 +685,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
         </DeviceFrame>
       ) : (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
+
           {/* Top Banner */}
           <div className="mb-6 rounded-2xl bg-gradient-to-r from-[#164E35] to-[#1E5137] text-white p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm border border-emerald-900/30">
             <div>
@@ -573,7 +711,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
           {/* 2-Column Responsive Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
+
             {/* Left Column (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
               {/* Farmer Profile Hero */}
@@ -594,7 +732,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3.5 relative z-10">
-                  <div 
+                  <div
                     onClick={() => onNavigate('diagnosis')}
                     className="rounded-2xl bg-[#245E41]/80 hover:bg-[#245E41] backdrop-blur-xs border border-white/10 p-3.5 transition cursor-pointer group shadow-xs"
                   >
@@ -721,7 +859,20 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
                 <div className="divide-y divide-stone-100">
                   {fields.map((field) => (
-                    <div key={field.id} className="py-4 first:pt-4 last:pb-1">
+                    <div
+              key={field.id}
+              className="py-4 first:pt-4 last:pb-1 cursor-pointer group"
+              onClick={() => setSelectedField(field)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setSelectedField(field);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open health passport for ${field.name}`}
+            >
                       <div className="relative w-full h-32 sm:h-36 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shadow-2xs">
                         <img
                           src={field.imageUrl}
@@ -773,9 +924,9 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
             {/* Right Column (5 cols) */}
             <div className="lg:col-span-5 space-y-6">
-              
+
               {/* Weather Risk Card */}
-              <div 
+              <div
                 onClick={() => onNavigate('weather')}
                 className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#D4681E] via-[#C8621A] to-[#B25313] p-5 sm:p-6 text-white shadow-lg border border-amber-800/30 cursor-pointer"
               >
@@ -832,12 +983,31 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                 </div>
               </div>
 
+              {/* Dynamic Field Health Action Timeline */}
+              <FieldHealthTimeline
+                timelineStep={latestDiagnosis?.timelineStep || (recentScans[0]?.timelineStep || 'Scan Completed')}
+                priority={latestDiagnosis?.priority || (recentScans[0]?.priority || 'WATCH')}
+                timestamp={latestDiagnosis?.timestamp || 'Latest Evidence'}
+              />
+
+              {/* Dynamic "Why This Case Is Prioritized" Explainability */}
+              <WhyPrioritizedCard
+                priority={latestDiagnosis?.priority || (recentScans[0]?.priority || 'WATCH')}
+                reasons={latestDiagnosis?.priorityReasons || (recentScans[0]?.priorityReasons || [])}
+                nextAction={latestDiagnosis?.recommendedNextAction || (recentScans[0]?.recommendedNextAction || '')}
+              />
+
               {/* Recent Scans */}
               <div className="rounded-3xl bg-white p-4 sm:p-5 shadow-sm border border-stone-200/80">
                 <div className="flex items-center justify-between pb-3 border-b border-stone-100">
-                  <h2 className="font-serif-display text-lg font-bold text-stone-900">
-                    Recent Scans
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-serif-display text-lg font-bold text-stone-900">
+                      Recent Scans
+                    </h2>
+                    <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded">
+                      {recentScans.filter(s => s.isLive).length} Live
+                    </span>
+                  </div>
                   <button
                     onClick={() => onNavigate('diagnosis')}
                     className="text-amber-800 hover:text-amber-900 text-xs sm:text-sm font-semibold transition hover:underline cursor-pointer"
@@ -861,19 +1031,28 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                           />
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <h4 className="font-serif-display font-bold text-stone-900 text-sm sm:text-base truncate">
                               {scan.disease}
                             </h4>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              scan.severity === 'High'
+                              scan.severity === 'High' || scan.priority === 'CRITICAL'
                                 ? 'bg-rose-50 text-rose-600 border border-rose-200/80'
-                                : scan.severity === 'Medium'
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200/80'
+                                : scan.severity === 'Medium' || scan.priority === 'HIGH'
+                                ? 'bg-orange-50 text-orange-700 border border-orange-200/80'
                                 : 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
                             }`}>
-                              {scan.severity}
+                              {scan.severity || scan.priority}
                             </span>
+                            {scan.isLive ? (
+                              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-600 text-white font-mono">
+                                LIVE
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 font-mono">
+                                DEMO
+                              </span>
+                            )}
                           </div>
                           <p className="text-[11px] sm:text-xs text-stone-500 truncate mt-0.5">
                             {scan.crop} · {scan.confidence}% confidence · {scan.time}
@@ -882,7 +1061,17 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
                       </div>
 
                       <button
-                        onClick={() => onNavigate('ipm')}
+                        onClick={() => {
+                          const matched = cropDiseases.find(d =>
+                            d.name.toLowerCase().includes(scan.disease.toLowerCase()) ||
+                            scan.disease.toLowerCase().includes(d.name.toLowerCase()) ||
+                            d.crop.toLowerCase().includes(scan.crop.toLowerCase())
+                          );
+                          if (matched) {
+                            setSelectedDisease(matched);
+                          }
+                          onNavigate('ipm');
+                        }}
                         className="shrink-0 rounded-full px-3.5 py-1 text-xs font-semibold text-stone-700 bg-white border border-stone-300 hover:border-emerald-600 hover:text-emerald-700 hover:bg-emerald-50/40 transition shadow-2xs cursor-pointer"
                       >
                         Advisory

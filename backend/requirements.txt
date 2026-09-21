@@ -3,7 +3,6 @@ fastapi
 uvicorn[standard]
 python-multipart
 pillow
-google-genai
 python-dotenv
 torch
 torchvision

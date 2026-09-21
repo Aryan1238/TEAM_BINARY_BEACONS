@@ -69,7 +69,7 @@ export const rawTranslations = {
       s1Desc: 'Farmers capture leaf photos or connect live camera. GPS location and crop stage auto-appended.',
       s2Num: '2',
       s2Title: 'AI Diagnoses',
-      s2Desc: 'Our YOLO & ResNet model cross-references symptoms with 50+ disease profiles for a confident diagnosis.',
+      s2Desc: 'Our PyTorch EfficientNet-B0 model cross-references symptoms with 38 disease classes for a confident diagnosis.',
       s3Num: '3',
       s3Title: 'Act & Monitor',
       s3Desc: 'Receive CIBRC tailored treatment plans with precision dosage and safe spray weather timing.'

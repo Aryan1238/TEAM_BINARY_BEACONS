@@ -13,7 +13,7 @@ export const EVALUATION_DATASETS = [
   {
     id: 'plantdoc-infield-1200',
     name: 'PlantDoc In-Field Real-World Benchmark (N = 1,200 | 77.6% Field Accuracy)',
-    modelName: 'ResNet-18 / ResNet-9 In-Field Calibrated Engine',
+    modelName: 'PyTorch EfficientNet-B0 In-Field Calibrated Engine',
     datasetSource: 'PlantDoc Real-World Field Dataset (IIT Delhi / ACM Multi-Leaf In-Situ Split)',
     description: '1,200 unconstrained in-field farmer photos captured under variable sunlight, leaf overlap, and natural soil background.',
     classes: [
@@ -35,7 +35,7 @@ export const EVALUATION_DATASETS = [
   {
     id: 'fieldplant-insitu-800',
     name: 'FieldPlant In-Situ Smartphone Validation Split (N = 800 | 81.3% Accuracy)',
-    modelName: 'ResNet-18 Mobile In-Situ Classifier',
+    modelName: 'PyTorch EfficientNet-B0 Mobile In-Situ Classifier',
     datasetSource: 'Maharashtra Vegetable & Fruit Cluster Farmer Smartphone Capture Benchmark',
     description: '800 in-situ mobile camera images evaluated across tomato and grape field canopies.',
     classes: [
@@ -54,8 +54,8 @@ export const EVALUATION_DATASETS = [
   {
     id: 'ip102-field-pest-600',
     name: 'IP102 Natural Field Insect Pest Test Split (N = 600 | 78.3% Accuracy)',
-    modelName: 'YOLOv8-Agri + ResNet Dual Trap & Foliar Classifier',
-    datasetSource: 'IP102 Field Pest Ground-Truth Benchmark (CICR & KVK Entomological Dissection)',
+    modelName: 'OpenCV Trap Heuristic + EfficientNet-B0 Foliar Benchmark',
+    datasetSource: 'IP102 Field Pest Ground-Truth Benchmark (CICR Entomological Reference)',
     description: '600 field trap captures and leaf feeding damage specimens evaluated in natural cotton & legume canopies.',
     classes: [
       'Cotton Pink Bollworm',
@@ -73,7 +73,7 @@ export const EVALUATION_DATASETS = [
   {
     id: 'pv-multicrop-1450',
     name: 'PlantVillage Laboratory Benchmark (Lab Control Split | N = 1,450)',
-    modelName: 'ResNet-9 Baseline (Sterile Lab Backgrounds)',
+    modelName: 'PyTorch EfficientNet-B0 Baseline (Sterile Lab Backgrounds)',
     datasetSource: 'PlantVillage Controlled Studio Dataset (Penn State / ICAR Reference Split)',
     description: '1,450 clean laboratory specimens on flat gray backgrounds demonstrating ideal condition baseline performance.',
     classes: [

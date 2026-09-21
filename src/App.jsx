@@ -10,8 +10,9 @@ import { ExtensionOfficerDashboard } from './components/ExtensionOfficerDashboar
 import { GovtCommandCenter } from './components/GovtCommandCenter';
 import { OfflineSMSSimulator } from './components/OfflineSMSSimulator';
 import { cropDiseases } from './data/cropDiseases';
+import { DiagnosisProvider } from './context/DiagnosisContext';
 
-function App() {
+function AppContent() {
   const [currentLang, setCurrentLang] = useState('en'); // 'en' | 'mr' | 'hi'
   const [currentRole, setCurrentRole] = useState('farmer'); // 'farmer' | 'officer' | 'govt'
   const [activeView, setActiveView] = useState('landing'); // 'landing' | 'diagnosis' | 'weather' | 'hotspots' | 'ipm' | 'dashboard'
@@ -32,7 +33,7 @@ function App() {
   };
 
   const handleEscalateKVK = (disease) => {
-    console.log('Escalated to KVK:', disease.name);
+    console.log('Escalated to KVK:', disease?.name);
   };
 
   return (
@@ -62,6 +63,7 @@ function App() {
           <DiagnosticStudio
             currentLang={currentLang}
             onNavigate={handleNavigate}
+            onRoleChange={handleRoleChange}
             onSelectDiseaseForIPM={handleSelectDiseaseForIPM}
             onEscalateKVK={handleEscalateKVK}
           />
@@ -96,6 +98,7 @@ function App() {
               <FarmerDashboard
                 currentLang={currentLang}
                 onNavigate={handleNavigate}
+                onRoleChange={handleRoleChange}
               />
             )}
 
@@ -103,6 +106,7 @@ function App() {
               <ExtensionOfficerDashboard
                 currentLang={currentLang}
                 onNavigate={handleNavigate}
+                onRoleChange={handleRoleChange}
               />
             )}
 
@@ -110,6 +114,7 @@ function App() {
               <GovtCommandCenter
                 currentLang={currentLang}
                 onNavigate={handleNavigate}
+                onRoleChange={handleRoleChange}
               />
             )}
           </>
@@ -126,5 +131,12 @@ function App() {
   );
 }
 
-export default App;
+function App() {
+  return (
+    <DiagnosisProvider>
+      <AppContent />
+    </DiagnosisProvider>
+  );
+}
 
+export default App;

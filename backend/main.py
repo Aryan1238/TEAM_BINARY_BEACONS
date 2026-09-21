@@ -1,5 +1,6 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 from PIL import Image
@@ -23,36 +24,26 @@ from pipeline.unified_pipeline import UnifiedCropHealthPipeline
 from pipeline.feedback_loop import ActiveLearningFeedbackLoop
 from geospatial.hotspot_analyzer import GeospatialHotspotAnalyzer
 from models.risk_forecaster import WeatherRiskForecaster
+from models.yolo_manager import YOLOManager
+from models.wildlife_alert_engine import WildlifeAlertEngine
 from config import IMAGE_VALIDATION_CONFIG
 
 
 # ============================================================
-# LOAD ENVIRONMENT VARIABLES & GEMINI
+# LOAD ENVIRONMENT VARIABLES & CONFIGURATION
 # ============================================================
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-
-client = None
-if GEMINI_API_KEY:
-    try:
-        from google import genai
-        client = genai.Client(api_key=GEMINI_API_KEY)
-        print(f"[OK] Gemini Client initialized as optional assistant with model: {MODEL_NAME}")
-    except Exception as e:
-        print(f"[WARN] Warning initializing Gemini Client: {e}")
-else:
-    print("[INFO] GEMINI_API_KEY not set. Running with native PyTorch EfficientNet-B0 Engine.")
-
 
 # ============================================================
-# ML ENGINE INITIALIZATION (EfficientNet-B0 38 Classes)
+# ML & VISION ENGINE INITIALIZATION (EfficientNet-B0 + YOLO)
 # ============================================================
 ml_pipeline = UnifiedCropHealthPipeline()
 feedback_loop = ActiveLearningFeedbackLoop()
 hotspot_analyzer = GeospatialHotspotAnalyzer()
 risk_forecaster = WeatherRiskForecaster()
+yolo_manager = YOLOManager()
+wildlife_alert_engine = WildlifeAlertEngine()
 
 
 # ============================================================
@@ -114,6 +105,12 @@ class FeedbackRequest(BaseModel):
     notes: Optional[str] = ""
 
 
+class HooterTriggerRequest(BaseModel):
+    threat_type: Optional[str] = "manual_trigger"
+    source: Optional[str] = "farm_sensor"
+    duration_seconds: Optional[int] = 5
+
+
 # ============================================================
 # HOME & HEALTH ENDPOINTS
 # ============================================================
@@ -121,25 +118,30 @@ class FeedbackRequest(BaseModel):
 def home():
     return {
         "success": True,
-        "message": "KrishiRakshak EfficientNet-B0 ML & AI Backend is running 🚀",
+        "message": "KrishiRakshak EfficientNet-B0 ML Backend is running 🚀",
         "problem_statement": "SIH 2026 PS 26131 - Govt of Maharashtra",
+        "ai_model": "PyTorch EfficientNet-B0",
         "ml_engine": "PyTorch EfficientNet-B0 Transfer Learning Engine (38 Classes)",
-        "gemini_active": client is not None
+        "classes": 38,
+        "grad_cam": True
     }
 
 
 @app.get("/health")
 def health():
+    yolo_stat = yolo_manager.get_status()
     return {
         "success": True,
         "status": "healthy",
         "backend": "online",
-        "ai_model": MODEL_NAME,
-        "ml_engine": "PyTorch EfficientNet-B0 (38 Classes, 224x224 ImageNet Norm, Grad-CAM)"
+        "ai_model": "PyTorch EfficientNet-B0",
+        "ml_engine": "PyTorch EfficientNet-B0",
+        "classes": 38,
+        "grad_cam": True,
+        "yolo_leaf_status": yolo_stat["yolo_leaf"]["status"],
+        "yolo_pest_status": yolo_stat["yolo_pest"]["status"],
+        "yolo_wildlife_status": yolo_stat["yolo_wildlife"]["status"]
     }
-
-
-from fastapi.responses import StreamingResponse
 
 try:
     import cv2
@@ -325,22 +327,13 @@ async def analyze_crop(file: UploadFile = File(...)):
             f"Safety Guideline: {advisory.get('safety_guidelines', 'Wear protective equipment. Observe pre-harvest interval (PHI).')}"
         ]
 
-        # Step 4: Optional Gemini Supplementary Advice (Strictly Auxiliary; Never Overrides Model Diagnosis)
-        supplementary_advice = None
-        if client:
-            try:
-                aux_prompt = (
-                    f"A farmer photographed a {crop_name} leaf diagnosed with {disease_name} "
-                    f"(confidence: {confidence_pct}). Provide a concise, empathetic 2-sentence farmer advisory "
-                    f"in simple language highlighting immediate steps."
-                )
-                gemini_res = client.models.generate_content(
-                    model=MODEL_NAME,
-                    contents=aux_prompt
-                )
-                supplementary_advice = gemini_res.text.strip()
-            except Exception as gemini_err:
-                print(f"[Gemini Auxiliary Notice] Supplementary advisory skipped: {gemini_err}")
+        # Step 4: Deterministic Agronomic Farmer Advisory (Local Expert Rules; Zero External LLM Dependency)
+        if "healthy" in predicted_class_key.lower():
+            supplementary_advice = f"Foliage displays healthy {crop_name} growth patterns. Maintain regular scouting and balanced nutrition."
+        else:
+            cultural = ipm_steps.get('step1_cultural', 'Maintain field sanitation and remove infected foliage.')
+            chemical = ipm_steps.get('step3_chemical', 'Follow recommended local agricultural extension guidelines.')
+            supplementary_advice = f"Immediate management for {disease_name} on {crop_name}: {cultural} Targeted treatment: {chemical}"
 
         width, height = pil_img.size
 
@@ -562,4 +555,117 @@ def ml_submit_feedback(req: FeedbackRequest):
         extension_worker_id=req.extension_worker_id,
         notes=req.notes
     )
+    return res
+
+
+# ============================================================
+# YOLO & REAL-TIME VISION ENDPOINTS
+# ============================================================
+@app.get("/api/v1/yolo/status")
+def get_yolo_status():
+    """Returns configuration and availability status for all YOLO pipelines."""
+    return {
+        "success": True,
+        **yolo_manager.get_status()
+    }
+
+
+@app.post("/api/v1/yolo/detect-leaf")
+async def yolo_detect_leaf(file: UploadFile = File(...)):
+    """
+    Detects leaf bounding box ROI in live camera frame or image.
+    Honest reporting: returns model_not_configured if weights are absent.
+    """
+    contents = await file.read()
+    res = yolo_manager.detect_leaf(contents)
+    return {
+        "success": True,
+        **res
+    }
+
+
+@app.post("/api/v1/yolo/diagnose-roi")
+async def yolo_diagnose_roi(file: UploadFile = File(...)):
+    """
+    Two-stage inference:
+    1. Leaf detection/localization via YOLO (if available, else full frame)
+    2. Disease classification via authoritative PyTorch EfficientNet-B0
+    """
+    contents = await file.read()
+    res = yolo_manager.diagnose_roi(contents, ml_pipeline.image_classifier)
+    return {
+        "success": res.get("status") == "success",
+        **res
+    }
+
+
+@app.post("/api/v1/yolo/detect-pest")
+async def yolo_detect_pest(file: UploadFile = File(...)):
+    """
+    Pest detection on trap images.
+    If YOLO weights absent, honestly routes to OpenCV contour heuristic.
+    """
+    contents = await file.read()
+    res = yolo_manager.detect_pest(contents)
+    return {
+        "success": True,
+        **res
+    }
+
+
+@app.post("/api/v1/yolo/detect-wildlife")
+async def yolo_detect_wildlife(file: UploadFile = File(...)):
+    """
+    Detects wildlife threats (deer, boar, bull, nilgai) in field perimeter images.
+    Honest reporting: returns model_not_configured if weights are absent.
+    """
+    contents = await file.read()
+    res = yolo_manager.detect_wildlife(contents)
+    return {
+        "success": True,
+        **res
+    }
+
+
+# ============================================================
+# WILDLIFE ALERT & IOT HOOTER ENDPOINTS
+# ============================================================
+@app.get("/api/v1/alerts/status")
+def get_alerts_status():
+    """Returns status of the wildlife alert engine, cooldown state, and recent alerts."""
+    return {
+        "success": True,
+        **wildlife_alert_engine.get_status()
+    }
+
+
+@app.post("/api/v1/alerts/trigger-hooter")
+def trigger_hooter_endpoint(
+    req: Optional[HooterTriggerRequest] = None,
+    x_hooter_token: Optional[str] = Header(None, alias="X-Hooter-Token"),
+    authorization: Optional[str] = Header(None, alias="Authorization")
+):
+    """
+    Secure hooter trigger endpoint.
+    Requires authentication via X-Hooter-Token or Authorization header.
+    Enforces cooldown debounce and triggers ESP32 or browser alarm fallback.
+    """
+    token = x_hooter_token or authorization
+    threat = req.threat_type if req else "manual_trigger"
+    source = req.source if req else "farm_sensor"
+    duration = req.duration_seconds if req else 5
+
+    res = wildlife_alert_engine.trigger_hooter(
+        auth_token=token,
+        threat_type=threat,
+        source=source,
+        custom_duration_s=duration
+    )
+
+    if not res.get("success") and res.get("error") == "UNAUTHORIZED":
+        return JSONResponse(status_code=401, content=res)
+
+    if not res.get("success") and res.get("debounced"):
+        return JSONResponse(status_code=429, content=res)
+
     return res

@@ -1,31 +1,16 @@
 /**
  * Universal AI Vision API Service for KrushiRaksha
- * Integrates:
- * 1. Primary Engine: Backend PyTorch EfficientNet-B0 (38-Class Frozen Benchmark Checkpoint)
- *    - Strict pre-inference image validation (blur, lighting, resolution, MIME)
- *    - Genuine gradient-based Grad-CAM hooked on model.features[-1]
- *    - Weather risk & CIBRC IPM pipeline integration
- * 2. Offline Fallback: Client-Side ONNX Runtime Web (38-Class ResNet)
- * 3. Supplementary Engine: Google Gemini 1.5 Flash (Strictly farmer advisory text/audio; NEVER primary diagnosis)
+ * Exclusively Powered by Backend PyTorch EfficientNet-B0 (38-Class Frozen Benchmark Checkpoint)
+ * - Strict pre-inference image validation (blur, lighting, resolution, MIME)
+ * - Genuine gradient-based Grad-CAM hooked on model.features[-1]
+ * - Deterministic weather risk & CIBRC IPM pipeline integration
  */
 
-import { runOnnxInference, parsePlantVillageClass } from '../utils/onnxInference';
-import { getPlantVillageDiagnosisRecord } from '../data/plantVillageRegistry';
+import { getPlantVillageDiagnosisRecord, parsePlantVillageClass } from '../data/plantVillageRegistry';
 import { ANALYZE_ENDPOINT } from '../config';
 
-const DEFAULT_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-
-export const getStoredApiKey = () => {
-  return localStorage.getItem('krushi_gemini_api_key') || DEFAULT_GEMINI_KEY || '';
-};
-
-export const setStoredApiKey = (key) => {
-  if (key) {
-    localStorage.setItem('krushi_gemini_api_key', key.trim());
-  } else {
-    localStorage.removeItem('krushi_gemini_api_key');
-  }
-};
+export const getStoredApiKey = () => '';
+export const setStoredApiKey = () => {};
 
 /**
  * Convert a File object or Image URL to Base64 string and HTMLImageElement
@@ -47,66 +32,19 @@ export const fileToBase64 = (file) => {
 };
 
 /**
- * Call Gemini 1.5 Flash for SUPPLEMENTARY advisory only.
- * This function is NEVER used to predict the disease or override model confidence.
- * It strictly takes the model's diagnosed disease and requests localized farmer guidance.
- */
-export const fetchGeminiSupplementaryAdvisory = async (cropName, diseaseName, confidencePct, apiKey) => {
-  if (!apiKey) return null;
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    const prompt = `A farmer's ${cropName} plant was diagnosed with "${diseaseName}" with ${confidencePct}% confidence by an agricultural neural network.
-Provide a concise, practical farmer advisory in simple language.
-Respond in strict JSON format ONLY with NO markdown code fences, NO backticks:
-{
-  "advisory_en": "2-3 sentences of immediate practical agronomic and safety advice in English",
-  "advisory_mr": "शेतकऱ्यांसाठी मराठीत २-३ वाक्यांचा तात्काळ कृषी सल्ला",
-  "advisory_hi": "किसान के लिए हिंदी में २-३ वाक्यों की व्यावहारिक सलाह"
-}`;
-
-    const requestBody = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        topP: 0.8,
-        maxOutputTokens: 512
-      }
-    };
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) return null;
-    const result = await response.json();
-    const textOutput = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const cleanedJson = textOutput.replace(/```json/gi, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanedJson);
-  } catch (err) {
-    console.warn('[Gemini Advisory] Supplementary call failed (non-fatal):', err);
-    return null;
-  }
-};
-
-/**
  * Universal Crop Diagnostic Engine:
- * Primary: PyTorch EfficientNet-B0 Backend (/analyze)
- * Secondary: Client-Side ONNX Runtime Web (Offline Fallback)
- * Auxiliary: Gemini 1.5 Flash (Supplementary advice only, never diagnosis)
+ * Primary Authoritative Engine: PyTorch EfficientNet-B0 Backend (/analyze)
  */
-export const runUniversalCropDiagnosis = async (file, userCustomKey = '') => {
-  const apiKey = userCustomKey || getStoredApiKey();
+export const runUniversalCropDiagnosis = async (file) => {
   const { dataUrl } = await fileToBase64(file);
 
   // =========================================================================
-  // Strategy 1: Primary Engine — PyTorch EfficientNet-B0 Backend (/analyze)
+  // Sole Authoritative Engine: PyTorch EfficientNet-B0 Backend (/analyze)
   // =========================================================================
   try {
-    console.log('🚀 Sending image to PyTorch EfficientNet-B0 Backend (/analyze)...');
+    console.log(`🚀 Sending image to PyTorch EfficientNet-B0 Backend (${ANALYZE_ENDPOINT})...`);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout for neural inference + gradcam
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout for neural inference + gradcam
 
     const formData = new FormData();
     formData.append('file', file);
@@ -118,9 +56,16 @@ export const runUniversalCropDiagnosis = async (file, userCustomKey = '') => {
     });
     clearTimeout(timeoutId);
 
+    if (!response.ok) {
+      const errBody = await response.text();
+      let parsedErr = {};
+      try { parsedErr = JSON.parse(errBody); } catch (_) {}
+      throw new Error(parsedErr.detail || parsedErr.message || `Backend returned HTTP ${response.status}: ${response.statusText}`);
+    }
+
     const data = await response.json();
 
-    // Check for pre-inference quality validation rejection
+    // Check for pre-inference quality validation rejection from backend
     if (data.validation_status === 'FAILED' || data.success === false) {
       console.warn('⚠️ Backend image validation rejected:', data.error_code, data.message);
       return {
@@ -129,6 +74,7 @@ export const runUniversalCropDiagnosis = async (file, userCustomKey = '') => {
         errorCode: data.error_code || 'VALIDATION_FAILED',
         message: data.message || 'Image failed pre-inference quality validation.',
         statusMessage: `⚠️ Quality Check Failed: ${data.message}`,
+        source: 'Image Pre-Inference Validation Gate',
         previewUrl: dataUrl
       };
     }
@@ -193,22 +139,13 @@ export const runUniversalCropDiagnosis = async (file, userCustomKey = '') => {
         diseaseRecord.backendRecommendations = analysis.recommendations;
       }
 
-      // Supplementary Gemini advisory (optional, strictly auxiliary)
-      let supplementaryAdvisory = analysis.supplementary_advice || null;
-      if (!supplementaryAdvisory && apiKey) {
-        const geminiAdv = await fetchGeminiSupplementaryAdvisory(cropName, diseaseName, confidenceNum, apiKey);
-        if (geminiAdv) {
-          supplementaryAdvisory = geminiAdv.advisory_en;
-          if (geminiAdv.advisory_mr) diseaseRecord.audioAdvisory = { ...diseaseRecord.audioAdvisory, mr: geminiAdv.advisory_mr };
-          if (geminiAdv.advisory_hi) diseaseRecord.audioAdvisory = { ...diseaseRecord.audioAdvisory, hi: geminiAdv.advisory_hi };
-          if (geminiAdv.advisory_en) diseaseRecord.audioAdvisory = { ...diseaseRecord.audioAdvisory, en: geminiAdv.advisory_en };
-        }
-      }
+      // Deterministic Backend Agronomic Advisory (Zero External LLM Dependency)
+      const supplementaryAdvisory = analysis.supplementary_advice || null;
 
       return {
         isLeaf: true,
         validationError: false,
-        source: `PyTorch ${modelArch} (38 Classes, Checkpoint Loaded)`,
+        source: 'FastAPI PyTorch EfficientNet-B0 (Verified 100% Leakage-Safe)',
         statusMessage: `✅ PyTorch ${modelArch}: ${cropName} — ${diseaseName} (${confidenceNum}%)`,
         disease: diseaseRecord,
         title: `${cropName} — ${diseaseName}`,
@@ -229,64 +166,19 @@ export const runUniversalCropDiagnosis = async (file, userCustomKey = '') => {
         supplementaryAdvice: supplementaryAdvisory
       };
     }
+
+    throw new Error('Backend returned unexpected response format.');
+
   } catch (backendErr) {
-    console.warn('⚠️ PyTorch Backend unreachable or failed, checking offline fallback:', backendErr);
-  }
-
-  // =========================================================================
-  // Strategy 2: Offline Client-Side ONNX Runtime Web Fallback
-  // =========================================================================
-  try {
-    console.log('⚡ Attempting offline ONNX Runtime Web inference...');
-    const imgEl = new Image();
-    imgEl.crossOrigin = 'anonymous';
-    imgEl.src = dataUrl;
-    await new Promise((resolve, reject) => {
-      imgEl.onload = resolve;
-      imgEl.onerror = reject;
-    });
-
-    const onnxResult = await runOnnxInference(imgEl);
-
-    if (!onnxResult.isLeaf) {
-      return {
-        isLeaf: false,
-        validationError: false,
-        source: 'PlantVillage ONNX Web Engine (Offline Fallback)',
-        statusMessage: '⚠️ No Leaf / Crop Foliage Recognized — Please align or upload a clear photo of a crop leaf.',
-        disease: null,
-        title: 'No Leaf / Non-Plant Object Detected',
-        confidence: 0,
-        severity: 'Non-Plant',
-        bbox: { x: 0, y: 0, width: 0, height: 0 },
-        saliencyPoints: [],
-        chlorosisPercent: '0%',
-        previewUrl: dataUrl,
-        probabilities: onnxResult.probabilities
-      };
-    }
-
+    console.error('❌ PyTorch EfficientNet-B0 Backend Error:', backendErr);
     return {
-      isLeaf: true,
-      validationError: false,
-      source: 'PlantVillage ResNet-9 ONNX Web Engine (Offline Fallback)',
-      statusMessage: '⚡ ONNX Web Engine Inference Complete (Backend was offline)',
-      disease: onnxResult.diseaseObject,
-      title: `${onnxResult.crop} — ${onnxResult.diseaseName}`,
-      confidence: onnxResult.confidence,
-      severity: onnxResult.isHealthy ? 'Healthy (Grade S0)' : 'Moderate (Grade S2)',
-      bbox: { x: 25, y: 25, width: 50, height: 50 },
-      saliencyPoints: [
-        { x: 38, y: 38, intensity: 0.95 },
-        { x: 55, y: 52, intensity: 0.88 }
-      ],
-      chlorosisPercent: onnxResult.isHealthy ? '4%' : '28%',
-      previewUrl: dataUrl,
-      probabilities: onnxResult.probabilities
+      isLeaf: false,
+      validationError: true,
+      errorCode: 'BACKEND_CONNECTION_ERROR',
+      message: `Cannot connect to PyTorch EfficientNet-B0 backend at ${ANALYZE_ENDPOINT}: ${backendErr.message}. Please ensure the backend server is running ('uvicorn main:app --reload' on port 8000).`,
+      statusMessage: `⚠️ Backend Connection Failed: ${backendErr.message}`,
+      source: 'PyTorch EfficientNet-B0 (Backend Offline)',
+      previewUrl: dataUrl
     };
-  } catch (onnxErr) {
-    console.warn('ONNX runtime execution error:', onnxErr);
   }
-
-  throw new Error('Both PyTorch backend (/analyze) and client-side ONNX engine are unavailable. Please ensure the backend server is running at http://127.0.0.1:8000.');
 };

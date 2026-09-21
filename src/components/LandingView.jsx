@@ -102,12 +102,12 @@ export const LandingView = ({ currentLang, onNavigate, onRoleChange }) => {
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600"></span>
                     </span>
                     <span className="text-xs font-extrabold uppercase tracking-wider text-amber-300 font-mono">
-                      YOLOv8-Agri Live Stream
+                      Foliar Diagnostics Live Stream
                     </span>
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-mono border border-emerald-700 flex items-center space-x-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>38.4 FPS · 12ms</span>
+                    <span>PyTorch EfficientNet-B0</span>
                   </span>
                 </div>
 
@@ -126,7 +126,7 @@ export const LandingView = ({ currentLang, onNavigate, onRoleChange }) => {
                   {/* Scanning Laser Line */}
                   <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#F59E0B] animate-[scan_2.5s_ease-in-out_infinite]" />
                   
-                  {/* Real-time YOLO Bounding Box 1 */}
+                  {/* Illustrative Foliar Bounding Box 1 */}
                   <div className="absolute top-[22%] left-[18%] w-[54%] h-[48%] border-2 rounded-lg border-rose-500 bg-rose-500/15 flex flex-col justify-between p-1.5 shadow-[0_0_15px_rgba(239,68,68,0.5)]">
                     <div className="self-start px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-rose-600 text-white shadow">
                       Phytophthora Late Blight [94.8%]
@@ -136,7 +136,7 @@ export const LandingView = ({ currentLang, onNavigate, onRoleChange }) => {
                     </div>
                   </div>
 
-                  {/* Real-time YOLO Bounding Box 2 */}
+                  {/* Illustrative Foliar Bounding Box 2 */}
                   <div className="absolute bottom-[12%] right-[10%] w-[32%] h-[28%] border-2 rounded-lg border-amber-400 bg-amber-400/15 flex items-start p-1 shadow-[0_0_10px_rgba(245,158,11,0.4)]">
                     <span className="bg-amber-500 text-emerald-950 text-[9px] font-extrabold px-1 py-0.2 rounded">
                       Chlorosis Halo (89%)
@@ -177,7 +177,7 @@ export const LandingView = ({ currentLang, onNavigate, onRoleChange }) => {
                   className="w-full py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-500 text-emerald-950 font-extrabold rounded-xl text-xs shadow-lg flex items-center justify-center space-x-2 transition-transform hover:scale-102 cursor-pointer"
                 >
                   <Camera className="w-4 h-4 text-emerald-950" />
-                  <span>Launch YOLO Live Camera & IP Drone Stream &rarr;</span>
+                  <span>Launch Foliar Live Camera & IP Drone Stream &rarr;</span>
                 </button>
 
               </div>
