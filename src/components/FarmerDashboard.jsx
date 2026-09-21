@@ -22,6 +22,7 @@ import { FloatingViewToggle } from './FloatingViewToggle';
 import { FieldHealthPassport } from './FieldHealthPassport';
 import { useDiagnosis } from '../context/DiagnosisContext';
 import { cropDiseases } from '../data/cropDiseases';
+import { useCountUp } from '../hooks/useCountUp';
 
 // Field Health Action Timeline Component
 const FieldHealthTimeline = ({ timelineStep = 'Scan Completed', priority = 'WATCH', timestamp = 'Just now' }) => {
@@ -155,7 +156,9 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
     farmerStats,
     mergedRecentScans,
     latestDiagnosis,
-    setSelectedDisease
+    setSelectedDisease,
+    farmerTrustScore,
+    weatherSnapshot
   } = useDiagnosis();
 
   const farmer = {
@@ -181,6 +184,11 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
     addField(newField);
     setFarmerAcreage((prev) => parseFloat((prev + newField.acres).toFixed(1)));
   };
+
+  // Animated counters for Farmer stats
+  const animatedTotalScans = useCountUp(farmerStats.totalScans);
+  const animatedIssuesDetected = useCountUp(farmerStats.issuesDetected);
+  const animatedLossPrevented = useCountUp(farmerStats.lossPrevented);
 
   // Farmer Dashboard Layout Content
   const DashboardCore = (
@@ -212,7 +220,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             className="rounded-2xl bg-[#245E41]/80 hover:bg-[#245E41] backdrop-blur-xs border border-white/10 p-3.5 transition cursor-pointer group shadow-xs"
           >
             <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              {farmer.totalScans}
+              {animatedTotalScans}
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-emerald-100/80 font-medium">
               <span className="text-xs group-hover:scale-110 transition-transform">📷</span>
@@ -222,7 +230,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
           <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
             <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center justify-between">
-              <span>{farmer.issuesDetected}</span>
+              <span>{animatedIssuesDetected}</span>
               <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping opacity-75" />
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200/90 font-medium">
@@ -243,7 +251,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
           <div className="rounded-2xl bg-[#245E41]/80 backdrop-blur-xs border border-white/10 p-3.5 transition shadow-xs">
             <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              ₹{farmer.lossPrevented.toLocaleString('en-IN')}
+              ₹{animatedLossPrevented.toLocaleString('en-IN')}
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] sm:text-xs text-amber-200 font-medium">
               <span className="text-xs">💰</span>
@@ -310,6 +318,246 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
           </p>
         </div>
       </div>
+
+      {/* ── Field Credibility Badge (Farmer-Exclusive) ── */}
+      {(() => {
+        const score = farmerTrustScore || 72;
+        const credLabel = score >= 75 ? 'Good' : score >= 55 ? 'Fair' : 'Needs Verification';
+        const credColor = score >= 75
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          : score >= 55
+          ? 'bg-amber-50 border-amber-300 text-amber-800'
+          : 'bg-rose-50 border-rose-300 text-rose-800';
+        const barColor = score >= 75 ? 'bg-emerald-500' : score >= 55 ? 'bg-amber-400' : 'bg-rose-500';
+        return (
+          <div id="farmer-credibility" className={`rounded-3xl p-4 sm:p-5 border shadow-sm space-y-3 scroll-mt-24 hover:shadow-md transition-shadow ${credColor}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🏅</span>
+                <h3 className="font-bold text-sm">Field Credibility Rating</h3>
+              </div>
+              <span className={`text-xs font-extrabold px-3 py-1 rounded-full border font-mono ${credColor}`}>
+                {credLabel}
+              </span>
+            </div>
+            <div className="w-full h-2.5 bg-black/10 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-700 ${barColor}`} style={{ width: `${score}%` }} />
+            </div>
+            <p className="text-xs leading-relaxed opacity-80">
+              Your credibility improves when Extension Officers confirm your AI diagnoses as accurate field ground-truth. Accurate reports help prioritize your plots for faster field visits.
+            </p>
+          </div>
+        );
+      })()}
+
+      {/* ── Field Health Trend — 30-Day SVG Sparkline (Farmer-Exclusive) ── */}
+      {(() => {
+        const activeField = fields[0];
+        const trend = activeField?.healthTrend || [];
+        if (trend.length === 0) return null;
+
+        const W = 300, H = 72, PAD = 8;
+        const scores = trend.map(t => t.score);
+        const minS = Math.min(...scores), maxS = Math.max(...scores);
+        const range = maxS - minS || 1;
+
+        const pts = trend.map((t, i) => {
+          const x = PAD + ((i / (trend.length - 1)) * (W - 2 * PAD));
+          const y = H - PAD - ((t.score - minS) / range) * (H - 2 * PAD);
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        });
+
+        const latestScore = scores[scores.length - 1];
+        const trendColor = latestScore >= 80 ? '#10b981' : latestScore >= 65 ? '#f59e0b' : '#ef4444';
+
+        return (
+          <div id="farmer-fields" className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200 scroll-mt-24 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-base">📈</span>
+                <h3 className="font-bold text-sm text-slate-900">Field Health Trend — 30 Days</h3>
+              </div>
+              <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                {activeField?.name?.replace('[DEMO / BASELINE] ', '')}
+              </span>
+            </div>
+            <div className="mt-3">
+              <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-20 rounded-xl">
+                {/* Grid lines */}
+                {[25, 50, 75].map(pct => {
+                  const y = H - PAD - ((pct - minS) / range) * (H - 2 * PAD);
+                  if (y < PAD || y > H - PAD) return null;
+                  return <line key={pct} x1={PAD} y1={y} x2={W - PAD} y2={y} stroke="#e2e8f0" strokeWidth="0.5" />;
+                })}
+                {/* Area fill */}
+                <defs>
+                  <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={trendColor} stopOpacity="0.25" />
+                    <stop offset="100%" stopColor={trendColor} stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
+                <polygon
+                  points={`${PAD},${H - PAD} ${pts.join(' ')} ${W - PAD},${H - PAD}`}
+                  fill="url(#sparkFill)"
+                />
+                {/* Line */}
+                <polyline points={pts.join(' ')} fill="none" stroke={trendColor} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+                {/* Latest dot */}
+                <circle cx={pts[pts.length - 1].split(',')[0]} cy={pts[pts.length - 1].split(',')[1]} r="3" fill={trendColor} />
+              </svg>
+              <div className="flex justify-between text-[9px] text-slate-400 font-mono mt-1 px-1">
+                <span>30d ago</span>
+                <span className="font-bold text-slate-600">Today: <span style={{ color: trendColor }}>{latestScore}%</span></span>
+                <span>Today</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── PHI Compliance Tracker (Farmer-Exclusive) ── */}
+      {(() => {
+        const activeField = fields[0];
+        if (!activeField?.lastSprayDate || !activeField?.phiDays) return null;
+
+        const lastSpray = new Date(activeField.lastSprayDate);
+        const daysSinceSpray = Math.round((Date.now() - lastSpray.getTime()) / 86400000);
+        const daysUntilSafe = Math.max(0, activeField.phiDays - daysSinceSpray);
+        const isHarvestSafe = daysUntilSafe === 0;
+        const isNearPHI = daysUntilSafe <= 5 && daysUntilSafe > 0;
+
+        const sprayLabel = lastSpray.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const phiColor = isHarvestSafe
+          ? 'border-emerald-200 bg-emerald-50'
+          : isNearPHI
+          ? 'border-amber-300 bg-amber-50'
+          : 'border-rose-200 bg-rose-50';
+        const phiStatusColor = isHarvestSafe ? 'text-emerald-700' : isNearPHI ? 'text-amber-700' : 'text-rose-700';
+        const phiBarColor = isHarvestSafe ? 'bg-emerald-500' : isNearPHI ? 'bg-amber-400' : 'bg-rose-500';
+        const phiPct = Math.round((daysSinceSpray / activeField.phiDays) * 100);
+
+        return (
+          <div id="farmer-phi" className={`rounded-3xl p-4 sm:p-5 border shadow-sm scroll-mt-24 space-y-3 hover:shadow-md transition-shadow ${phiColor}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🛡️</span>
+                <h3 className="font-bold text-sm text-slate-900">PHI Compliance Tracker</h3>
+              </div>
+              <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full border font-mono ${
+                isHarvestSafe ? 'bg-emerald-100 border-emerald-300 text-emerald-800' :
+                isNearPHI ? 'bg-amber-100 border-amber-300 text-amber-800' :
+                'bg-rose-100 border-rose-300 text-rose-800'
+              }`}>
+                {isHarvestSafe ? '✅ Safe to Harvest' : isNearPHI ? `⚠️ ${daysUntilSafe}d Remaining` : `🚫 Do Not Harvest (${daysUntilSafe}d)`}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-white/70 rounded-2xl p-3 border border-black/5">
+                <span className="text-slate-500 block text-[10px] uppercase tracking-wider font-bold">Last Spray</span>
+                <span className="font-bold text-slate-900 block mt-0.5">{sprayLabel}</span>
+                <span className="text-slate-500 text-[10px]">{daysSinceSpray} days ago</span>
+              </div>
+              <div className="bg-white/70 rounded-2xl p-3 border border-black/5">
+                <span className="text-slate-500 block text-[10px] uppercase tracking-wider font-bold">Chemical</span>
+                <span className="font-bold text-slate-800 block mt-0.5 leading-tight text-[11px]">{activeField.lastSprayChemical}</span>
+                <span className="text-slate-500 text-[10px]">PHI: {activeField.phiDays} days</span>
+              </div>
+            </div>
+
+            {/* PHI progress bar */}
+            <div>
+              <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+                <span>Spray date</span>
+                <span className={`font-bold ${phiStatusColor}`}>
+                  {isHarvestSafe ? 'PHI complete — harvest safe' : `${daysUntilSafe} days until safe harvest`}
+                </span>
+                <span>PHI end</span>
+              </div>
+              <div className="w-full h-3 bg-black/10 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${phiBarColor}`}
+                  style={{ width: `${Math.min(100, phiPct)}%` }}
+                />
+              </div>
+            </div>
+
+            <p className="text-[10px] text-slate-500 italic">
+              Pre-Harvest Interval (PHI) compliance per CIBRC label guidelines. Do not harvest produce before PHI expires.
+            </p>
+          </div>
+        );
+      })()}
+
+      {/* ── Nearest Agri-Input Store Stock (Farmer-Exclusive, cross-linked from Govt buffer data) ── */}
+      {(() => {
+        const activeField = fields[0];
+        const latestDisease = (activeField?.diseaseHistory?.[0] || '').toLowerCase();
+
+        // Cross-link from Govt supply chain data — relevant molecules for current disease
+        const govtStocks = [
+          { molecule: 'Copper Oxychloride 50 WP', stockPct: 84, relevance: ['blight', 'downy', 'bacterial', 'canker', 'spot'] },
+          { molecule: 'Trichoderma viride 2% WP', stockPct: 72, relevance: ['soil', 'rot', 'wilt', 'fusarium'] },
+          { molecule: 'Chlorantraniliprole 18.5 SC', stockPct: 28, relevance: ['bollworm', 'moth', 'larva', 'borer'] },
+          { molecule: 'Beauveria bassiana 1.15% WP', stockPct: 65, relevance: ['whitefly', 'thrips', 'aphid', 'mite'] },
+        ];
+
+        const relevant = govtStocks.filter(s =>
+          s.relevance.some(kw => latestDisease.includes(kw))
+        );
+        const display = relevant.length >= 2 ? relevant.slice(0, 3) : govtStocks.slice(0, 3);
+
+        return (
+          <div id="farmer-store" className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-sm scroll-mt-24 space-y-3 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🏪</span>
+                <h3 className="font-bold text-sm text-slate-900">Nearest Agri-Input Store Stock</h3>
+              </div>
+              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded font-mono">
+                DEMO / BASELINE — Govt Supply Chain Data
+              </span>
+            </div>
+
+            <p className="text-[10px] text-slate-500">
+              Agri-chemical availability at district buffer warehouses — cross-linked from Government stockpile monitor. Stock levels updated by Agriculture Department (DEMO).
+            </p>
+
+            <div className="space-y-2">
+              {display.map((item, idx) => {
+                const isLow = item.stockPct <= 28;
+                return (
+                  <div key={idx} className={`flex items-center justify-between p-2.5 rounded-2xl text-xs border ${
+                    isLow ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <div>
+                      <span className="font-bold text-slate-900 block">{item.molecule}</span>
+                      {isLow && <span className="text-[10px] text-rose-700 font-bold">🚨 Low stock — check alternate supplier</span>}
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                        isLow ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                      }`}>
+                        {item.stockPct}%
+                      </span>
+                      <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${isLow ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${item.stockPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-[10px] text-slate-400 italic">
+              Showing top-3 chemicals relevant to your current field disease profile. Contact your nearest Krishi Kendra for purchase.
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Photo 3: 4 Quick Actions (2x2 Grid) */}
       <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
@@ -635,19 +883,21 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
         <div className="pt-4 border-t border-emerald-800/60">
           <div className="text-xs font-bold uppercase tracking-wider text-amber-300">
-            Emergency
+            Farmer Support
           </div>
-          <div className="mt-1 flex items-center gap-2">
-            <Phone className="w-4 h-4 text-amber-400" />
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <Phone className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-sm font-semibold text-emerald-100">Kisan Call Centre</span>
+            <span className="text-emerald-700">|</span>
             <a
               href="tel:18001801551"
               className="font-mono text-sm sm:text-base font-bold text-white hover:text-amber-300 transition tracking-wide"
             >
-              Kisan Helpline: 1800-180-1551
+              1800-180-1551
             </a>
           </div>
           <p className="mt-1 text-xs text-emerald-200/70">
-            Available in Hindi, Marathi, English, Telugu, and 8 more regional languages.
+            Official toll-free agricultural support • 6:00 AM–10:00 PM
           </p>
         </div>
 
@@ -1169,19 +1419,21 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
 
             <div className="pt-4 border-t border-emerald-800/60">
               <div className="text-xs font-bold uppercase tracking-wider text-amber-300">
-                Emergency
+                Farmer Support
               </div>
-              <div className="mt-1 flex items-center gap-2">
-                <Phone className="w-4 h-4 text-amber-400" />
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <Phone className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-sm font-semibold text-emerald-100">Kisan Call Centre</span>
+                <span className="text-emerald-700">|</span>
                 <a
                   href="tel:18001801551"
                   className="font-mono text-sm sm:text-base font-bold text-white hover:text-amber-300 transition tracking-wide"
                 >
-                  Kisan Helpline: 1800-180-1551
+                  1800-180-1551
                 </a>
               </div>
               <p className="mt-1 text-xs text-emerald-200/70">
-                Available in Hindi, Marathi, English, Telugu, and 8 more regional languages.
+                Official toll-free agricultural support • 6:00 AM–10:00 PM
               </p>
             </div>
 

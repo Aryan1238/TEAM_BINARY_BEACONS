@@ -240,3 +240,99 @@ export function getPriorityStyles(priority = 'WATCH') {
       };
   }
 }
+
+/**
+ * Officer Visit Priority Score — deterministic 4-factor formula.
+ *
+ * visit_priority_score =
+ *   (confidence% × 0.3) +
+ *   (days_pending × 0.25) +       [capped at 30 days for normalization]
+ *   (nearby_cases_2km × 0.25) +   [capped at 10 for normalization]
+ *   (weather_risk_multiplier × 0.2 × 100)
+ *
+ * weather_risk_multiplier = 1.5 if humidity>75% AND rainForecast, else 1.0
+ *
+ * Each factor contributes to a 0–100 scale.
+ *
+ * @param {Object} params
+ * @param {number} params.confidence     — PyTorch model confidence (0–100)
+ * @param {number} params.daysPending    — Integer days since case logged
+ * @param {number} params.nearbyCases2km — Count of nearby cases within ~2km proxy
+ * @param {number} params.humidity       — Ambient humidity % (from weatherSnapshot)
+ * @param {boolean} params.rainForecast  — Whether rain is forecast
+ * @param {boolean} [params.lowTrustFarmer] — Whether farmer trust score <60
+ * @returns {{
+ *   visitScore: number,
+ *   weatherRiskMultiplier: number,
+ *   factors: Array<{name: string, rawValue: number|string, weight: number, contribution: number, note: string}>
+ * }}
+ */
+export function computeVisitPriorityScore({
+  confidence = 0,
+  daysPending = 0,
+  nearbyCases2km = 0,
+  humidity = 60,
+  rainForecast = false,
+  lowTrustFarmer = false
+}) {
+  const conf = Math.max(0, Math.min(100, Number(confidence) || 0));
+  const days = Math.max(0, Math.min(30, Number(daysPending) || 0));
+  const nearby = Math.max(0, Math.min(10, Number(nearbyCases2km) || 0));
+  const humidNum = Number(humidity) || 60;
+  const wxMultiplier = (humidNum > 75 && rainForecast) ? 1.5 : 1.0;
+
+  // Contributions (each normalized to a 0–30 or 0–20 scale per factor)
+  const confContribution    = conf * 0.3;                   // max 30
+  const daysContribution    = (days / 30) * 100 * 0.25;    // max 25
+  const nearbyContribution  = (nearby / 10) * 100 * 0.25;  // max 25
+  const wxContribution      = wxMultiplier * 0.2 * 100;    // 20 (1x) or 30 (1.5x)
+
+  let rawScore = confContribution + daysContribution + nearbyContribution + wxContribution;
+
+  // Low-trust farmer boost
+  if (lowTrustFarmer) rawScore += 15;
+
+  const visitScore = Math.round(Math.max(0, Math.min(100, rawScore)));
+
+  const factors = [
+    {
+      name: 'AI Confidence',
+      rawValue: `${conf.toFixed(1)}%`,
+      weight: 0.3,
+      contribution: Math.round(confContribution * 10) / 10,
+      note: 'PyTorch EfficientNet-B0 softmax confidence'
+    },
+    {
+      name: 'Days Pending',
+      rawValue: `${days} day${days !== 1 ? 's' : ''}`,
+      weight: 0.25,
+      contribution: Math.round(daysContribution * 10) / 10,
+      note: 'Since case first logged (older = higher urgency)'
+    },
+    {
+      name: 'Nearby Cases (2 km)',
+      rawValue: `${nearby} case${nearby !== 1 ? 's' : ''}`,
+      weight: 0.25,
+      contribution: Math.round(nearbyContribution * 10) / 10,
+      note: 'Cluster density proxy within ~2 km radius'
+    },
+    {
+      name: 'Weather Risk',
+      rawValue: wxMultiplier === 1.5 ? '1.5× (Humid + Rain)' : '1.0× (Normal)',
+      weight: 0.2,
+      contribution: Math.round(wxContribution * 10) / 10,
+      note: humidity > 75 && rainForecast
+        ? `Humidity ${humidity}% > 75% & rain forecast — fungal spread risk elevated`
+        : `Humidity ${humidity}%, no imminent rain — baseline multiplier`
+    },
+    ...(lowTrustFarmer ? [{
+      name: 'Low-Trust Farmer Boost',
+      rawValue: 'Trust < 60',
+      weight: '—',
+      contribution: 15,
+      note: 'Farmer credibility < 60 — human verification prioritized'
+    }] : [])
+  ];
+
+  return { visitScore, weatherRiskMultiplier: wxMultiplier, factors };
+}

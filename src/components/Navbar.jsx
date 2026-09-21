@@ -12,7 +12,6 @@ import {
   Menu, 
   X,
   Scan,
-  LayoutDashboard,
   Cpu,
   Camera,
   Radio,
@@ -32,13 +31,19 @@ export const Navbar = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const tNav = getUiTranslation(currentLang).nav;
 
+  // Role switch: sets role AND navigates to dashboard
+  const handleRoleAndNavigate = (role) => {
+    onRoleChange(role);
+    onNavigate('dashboard');
+    setMobileMenuOpen(false);
+  };
+
   const navItems = [
     { id: 'landing', label: tNav.home || 'Home', icon: Sprout },
     { id: 'diagnosis', label: tNav.diagnosis || 'AI Diagnosis & YOLO', icon: Camera, highlight: true },
     { id: 'weather', label: tNav.weather || 'Weather Risk', icon: CloudRain },
     { id: 'hotspots', label: tNav.hotspots || 'Hotspot GIS', icon: MapPin },
     { id: 'ipm', label: tNav.ipm || 'CIBRC Dosage', icon: Calculator },
-    { id: 'dashboard', label: tNav.dashboard || 'Role Hub', icon: LayoutDashboard },
   ];
 
   const languageOptions = [
@@ -78,15 +83,18 @@ export const Navbar = ({
               <span>{tNav.offlineSms || 'Offline 2G SMS / IVR'}</span>
             </button>
             <span className="text-emerald-700 hidden sm:inline">|</span>
-            <div className="hidden sm:flex items-center space-x-1 text-emerald-200 font-mono">
+            <a
+              href="tel:18001801551"
+              className="hidden sm:flex items-center space-x-1 text-emerald-200 hover:text-amber-300 transition-colors font-mono"
+            >
               <PhoneCall className="w-3 h-3 text-emerald-400" />
-              <span>1800-KRUSHI</span>
-            </div>
+              <span>🌾 Kisan Support • 1800-180-1551</span>
+            </a>
           </div>
         </div>
       </div>
 
-      {/* Main Navbar: Logo, Navigation Pills, Roles & YOLO Action */}
+      {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2">
         <div className="flex items-center justify-between gap-2 sm:gap-4 flex-wrap lg:flex-nowrap">
           
@@ -115,7 +123,7 @@ export const Navbar = ({
             </div>
           </div>
 
-          {/* CENTER: Navigation Links (Always Visible on Desktop & Laptop) */}
+          {/* CENTER: Navigation */}
           <nav className="hidden md:flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center py-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -140,13 +148,13 @@ export const Navbar = ({
             })}
           </nav>
 
-          {/* RIGHT: Role Switcher, Language & YOLO Button */}
+          {/* RIGHT: Role Switcher, Language & YOLO */}
           <div className="flex items-center space-x-2 shrink-0 ml-auto lg:ml-0">
             
-            {/* Role Switcher */}
+            {/* Role Switcher — each button sets role + navigates to dashboard */}
             <div className="hidden sm:flex bg-[#071F17] p-0.5 rounded-xl border border-emerald-800 items-center shrink-0">
               <button
-                onClick={() => onRoleChange('farmer')}
+                onClick={() => handleRoleAndNavigate('farmer')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   currentRole === 'farmer' 
                     ? 'bg-emerald-700 text-white shadow-sm' 
@@ -156,7 +164,7 @@ export const Navbar = ({
                 {tNav.farmer || '🌾 Farmer'}
               </button>
               <button
-                onClick={() => onRoleChange('officer')}
+                onClick={() => handleRoleAndNavigate('officer')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   currentRole === 'officer' 
                     ? 'bg-emerald-700 text-white shadow-sm' 
@@ -166,7 +174,7 @@ export const Navbar = ({
                 {tNav.officer || '🧑‍🌾 Officer'}
               </button>
               <button
-                onClick={() => onRoleChange('govt')}
+                onClick={() => handleRoleAndNavigate('govt')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   currentRole === 'govt' 
                     ? 'bg-emerald-700 text-white shadow-sm' 
@@ -177,7 +185,7 @@ export const Navbar = ({
               </button>
             </div>
 
-            {/* Language Selector (All 11 Indian Agricultural Languages) */}
+            {/* Language Selector */}
             <div className="flex items-center bg-[#071F17] rounded-xl border border-emerald-800 px-2 py-1 text-xs shrink-0">
               <Globe className="w-3.5 h-3.5 text-emerald-400 mr-1 shrink-0" />
               <select
@@ -193,7 +201,7 @@ export const Navbar = ({
               </select>
             </div>
 
-            {/* Primary Action Button: YOLO Live Vision */}
+            {/* Primary Action: YOLO Live Vision */}
             <button
               onClick={() => onNavigate('diagnosis')}
               className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-500 text-emerald-950 font-extrabold px-3.5 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 transform hover:scale-102 active:scale-98"
@@ -202,7 +210,7 @@ export const Navbar = ({
               <span className="whitespace-nowrap">{tNav.yoloButton || 'YOLO Live Vision'}</span>
             </button>
 
-            {/* Mobile Hamburger Toggle */}
+            {/* Mobile Hamburger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-emerald-200 hover:text-white rounded-xl hover:bg-emerald-900 border border-emerald-800 cursor-pointer"
@@ -213,7 +221,7 @@ export const Navbar = ({
 
         </div>
 
-        {/* Mobile Navigation Dropdown */}
+        {/* Mobile Nav */}
         {mobileMenuOpen && (
           <div className="md:hidden pt-3 pb-3 border-t border-emerald-800 space-y-2 mt-2">
             <div className="grid grid-cols-2 gap-1.5 pb-2">
@@ -228,9 +236,7 @@ export const Navbar = ({
                       setMobileMenuOpen(false);
                     }}
                     className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all ${
-                      isActive 
-                        ? 'bg-emerald-700 text-amber-300' 
-                        : 'bg-emerald-950/80 text-emerald-100'
+                      isActive ? 'bg-emerald-700 text-amber-300' : 'bg-emerald-950/80 text-emerald-100'
                     }`}
                   >
                     <Icon className="w-4 h-4 text-amber-400" />
@@ -238,6 +244,19 @@ export const Navbar = ({
                   </button>
                 );
               })}
+            </div>
+            <div className="flex gap-1.5">
+              {['farmer', 'officer', 'govt'].map(r => (
+                <button
+                  key={r}
+                  onClick={() => handleRoleAndNavigate(r)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    currentRole === r ? 'bg-emerald-600 text-white' : 'bg-emerald-950 text-emerald-300'
+                  }`}
+                >
+                  {r === 'farmer' ? '🌾 Farmer' : r === 'officer' ? '🧑‍🌾 Officer' : '🏛️ Govt'}
+                </button>
+              ))}
             </div>
           </div>
         )}

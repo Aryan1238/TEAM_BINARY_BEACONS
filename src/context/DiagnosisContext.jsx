@@ -4,7 +4,22 @@ import { cropDiseases } from '../data/cropDiseases';
 
 const DiagnosisContext = createContext(null);
 
-// Baseline demo fields (Farmer single source of truth)
+/**
+ * Generates a seeded 30-day health trend array ending at currentScore.
+ * Deterministic — same seed yields same array.
+ */
+function generateHealthTrend(currentScore, seed = 42) {
+  const trend = [];
+  let score = Math.min(100, currentScore + 15 + (seed % 8));
+  for (let i = 30; i >= 0; i--) {
+    const delta = ((seed * (i + 1) * 7) % 11) - 4;
+    score = Math.max(30, Math.min(100, score + delta));
+    trend.push({ day: i === 0 ? 'Today' : `${i}d ago`, score: Math.round(score) });
+  }
+  trend[trend.length - 1].score = currentScore;
+  return trend;
+}
+
 // Baseline demo fields (Farmer single source of truth - labeled DEMO / BASELINE)
 const INITIAL_FIELDS = [
   {
@@ -19,7 +34,11 @@ const INITIAL_FIELDS = [
     diseaseHistory: ['Early Blight (91%)'],
     latestDiagnosisId: null,
     imageUrl: 'https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=800&q=80',
-    isDemo: true
+    isDemo: true,
+    lastSprayDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    lastSprayChemical: 'Mancozeb 75 WP (Dithane M-45)',
+    phiDays: 14,
+    healthTrend: generateHealthTrend(72, 13)
   },
   {
     id: 'field-2',
@@ -33,7 +52,11 @@ const INITIAL_FIELDS = [
     diseaseHistory: [],
     latestDiagnosisId: null,
     imageUrl: 'https://images.unsplash.com/photo-1594488500257-7945d8b7b75a?auto=format&fit=crop&w=800&q=80',
-    isDemo: true
+    isDemo: true,
+    lastSprayDate: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString(),
+    lastSprayChemical: 'Chlorantraniliprole 18.5 SC (Coragen)',
+    phiDays: 21,
+    healthTrend: generateHealthTrend(94, 27)
   },
   {
     id: 'field-3',
@@ -47,9 +70,24 @@ const INITIAL_FIELDS = [
     diseaseHistory: [],
     latestDiagnosisId: null,
     imageUrl: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?auto=format&fit=crop&w=800&q=80',
-    isDemo: true
+    isDemo: true,
+    lastSprayDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    lastSprayChemical: 'Propiconazole 25 EC (Tilt)',
+    phiDays: 10,
+    healthTrend: generateHealthTrend(86, 51)
   }
 ];
+
+// Demo weatherSnapshot (Nashik monsoon baseline — seeded, not real-time)
+const DEMO_WEATHER_SNAPSHOT = {
+  humidity: 78,
+  rainForecast: true,
+  temperature: 26,
+  windSpeed: 12,
+  description: 'Overcast · Active monsoon · Nashik Division [DEMO / BASELINE]',
+  source: 'demo_baseline'
+};
+
 
 // Baseline isolated demo fallback scans for Farmer dashboard (clearly flagged as DEMO / BASELINE)
 const DEMO_FALLBACK_SCANS = [
@@ -176,6 +214,8 @@ export function DiagnosisProvider({ children }) {
   const [selectedDisease, setSelectedDisease] = useState(cropDiseases[0]);
   const [selectedField, setSelectedField] = useState(null);
   const [demoMode, setDemoMode] = useState(true);
+  const [farmerTrustScore, setFarmerTrustScore] = useState(72); // Baseline trust: 72/100
+  const [weatherSnapshot, setWeatherSnapshot] = useState(DEMO_WEATHER_SNAPSHOT);
 
   // Dynamic live counters calculated STRICTLY from source === 'live_backend'
   const govtAggregates = useMemo(() => {
@@ -400,6 +440,13 @@ export function DiagnosisProvider({ children }) {
         timelineStep: confirmed ? 'Resolved / Monitoring' : 'Corrected / Closed'
       };
     }));
+    // Update farmer trust score: +5 confirmed, -3 false positive
+    setFarmerTrustScore(prev => Math.max(0, Math.min(100, prev + (confirmed ? 5 : -3))));
+  }, []);
+
+  /** Manually update trust score (for testing / UI) */
+  const updateTrustScore = useCallback((delta) => {
+    setFarmerTrustScore(prev => Math.max(0, Math.min(100, prev + delta)));
   }, []);
 
   /**
@@ -450,11 +497,17 @@ export function DiagnosisProvider({ children }) {
     setSelectedField,
     // Farmer stats
     farmerStats,
+    // Trust score
+    farmerTrustScore,
+    updateTrustScore,
     // Officer cases
     officerCases,
     updateOfficerCaseStatus,
     // Government aggregates
     govtAggregates,
+    // Weather snapshot (Nashik demo baseline)
+    weatherSnapshot,
+    setWeatherSnapshot,
     // IPM & general navigation state
     selectedDisease,
     setSelectedDisease,

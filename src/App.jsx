@@ -26,6 +26,8 @@ function AppContent() {
 
   const handleRoleChange = (role) => {
     setCurrentRole(role);
+    setActiveView('dashboard');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectDiseaseForIPM = (disease) => {

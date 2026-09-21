@@ -17,47 +17,91 @@ import {
   Sliders,
   Check,
   Activity,
-  Sparkles
+  Sparkles,
+  Wind,
+  Zap
 } from 'lucide-react';
 import { maharashtraDistricts } from '../data/maharashtraGeo';
 import confetti from 'canvas-confetti';
 import { useDiagnosis } from '../context/DiagnosisContext';
+import { useCountUp } from '../hooks/useCountUp';
+
+// ─── Seeded monsoon wind directions per district (fixed, not random) ───
+const DISTRICT_WIND = {
+  'Nashik':       { dir: 'NE', angleDeg: 45,  cx: 55, cy: 30 },
+  'Yavatmal':     { dir: 'SW', angleDeg: 225, cx: 72, cy: 72 },
+  'Amravati':     { dir: 'SW', angleDeg: 225, cx: 78, cy: 52 },
+  'Jalgaon':      { dir: 'NE', angleDeg: 45,  cx: 48, cy: 18 },
+  'Pune':         { dir: 'W',  angleDeg: 270, cx: 38, cy: 55 },
+  'Ahmednagar':   { dir: 'NW', angleDeg: 315, cx: 45, cy: 42 },
+  'Kolhapur':     { dir: 'SW', angleDeg: 225, cx: 28, cy: 72 },
+  'Aurangabad':   { dir: 'E',  angleDeg: 90,  cx: 58, cy: 45 },
+};
+
+const CONE_HALF_ANGLE = 35; // degrees spread on each side of wind direction
+
+/** Compute SVG arc path for a spread cone centered at (cx%, cy%) */
+function coneArc(cx, cy, angleDeg, radius, halfAngle) {
+  const toRad = d => (d * Math.PI) / 180;
+  const a1 = toRad(angleDeg - halfAngle);
+  const a2 = toRad(angleDeg + halfAngle);
+  const x1 = cx + radius * Math.cos(a1);
+  const y1 = cy + radius * Math.sin(a1);
+  const x2 = cx + radius * Math.cos(a2);
+  const y2 = cy + radius * Math.sin(a2);
+  return `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`;
+}
+
+// ─── Govt Buffer Stock Data (reactive state) ───
+const INITIAL_STOCKS = [
+  { id: 'cop', molecule: 'Copper Oxychloride 50 WP', stockPct: 84, district: 'Nashik / Pune', target: 'Fungal diseases' },
+  { id: 'tri', molecule: 'Trichoderma viride 2% WP', stockPct: 72, district: 'Amravati / Kolhapur', target: 'Soil-borne pathogens' },
+  { id: 'chl', molecule: 'Chlorantraniliprole 18.5 SC', stockPct: 28, district: 'Yavatmal / Jalgaon', target: 'Cotton bollworm / Lepidoptera' },
+  { id: 'bea', molecule: 'Beauveria bassiana 1.15% WP', stockPct: 65, district: 'Solapur / Sangli', target: 'Whitefly / Thrips' },
+];
 
 export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
   const { govtAggregates, latestDiagnosis } = useDiagnosis();
   const [retrainingStatus, setRetrainingStatus] = useState('Idle (PyTorch EfficientNet-B0 v2.4.1 Production)');
   const [isRetraining, setIsRetraining] = useState(false);
+  const [stocks, setStocks] = useState(INITIAL_STOCKS);
+  const [procurementAlerts, setProcurementAlerts] = useState({});
 
-  const supplyChainStocks = [
-    { molecule: 'Copper Oxychloride 50 WP', stockMetric: '84% (Adequate)', district: 'Nashik / Pune', status: 'Healthy' },
-    { molecule: 'Trichoderma viride 2% WP', stockMetric: '72% (Adequate)', district: 'Amravati / Kolhapur', status: 'Healthy' },
-    { molecule: 'Chlorantraniliprole 18.5 SC', stockMetric: '28% (Low Stock Alert)', district: 'Yavatmal / Jalgaon', status: 'Warning' },
-    { molecule: 'Beauveria bassiana 1.15% WP', stockMetric: '65% (Adequate)', district: 'Solapur / Sangli', status: 'Healthy' }
-  ];
+  // Animated live KPI counters
+  const animatedLiveDiagnoses = useCountUp(govtAggregates.liveDiagnosesCount);
+  const animatedLiveCritical = useCountUp(govtAggregates.liveCriticalCount);
+  const animatedLiveHighPriority = useCountUp(govtAggregates.liveHighPriorityCount);
 
   const handleTriggerRetrain = () => {
     setIsRetraining(true);
     setRetrainingStatus('Ingesting ground-truth annotations from extension officers...');
-    
     setTimeout(() => {
       setRetrainingStatus('Fine-tuning PyTorch EfficientNet-B0 on Maharashtra field variants...');
       setTimeout(() => {
         setIsRetraining(false);
         setRetrainingStatus('Active (EfficientNet-B0 Checkpoint Verified & Deployed)');
-        confetti({
-          particleCount: 30,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
+        confetti({ particleCount: 30, spread: 70, origin: { y: 0.6 } });
       }, 1500);
     }, 1200);
   };
+
+  const handleEmergencyProcurement = (id, molecule) => {
+    setProcurementAlerts(prev => ({ ...prev, [id]: true }));
+    setTimeout(() => {
+      setProcurementAlerts(prev => ({ ...prev, [id]: false }));
+    }, 4000);
+  };
+
+  // Find top-2 critical districts for spread cone rendering
+  const criticalDistricts = maharashtraDistricts
+    .filter(d => d.riskLevel === 'Critical')
+    .slice(0, 2);
 
   return (
     <div className="min-h-screen bg-[#F8F9F5] py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         
-        {/* Header Title */}
+        {/* ── Header ── */}
         <div className="bg-[#0F382A] rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
           <div className="space-y-2 max-w-2xl relative z-10">
             <div className="flex items-center space-x-2">
@@ -73,7 +117,6 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
               Macro-epidemiology monitoring across 8 pilot districts, supply-chain input buffer management, and automated Active Learning model continuous retraining.
             </p>
           </div>
-
           <div className="flex items-center space-x-3 shrink-0">
             <button
               onClick={() => onNavigate('hotspots')}
@@ -85,23 +128,18 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
           </div>
         </div>
 
-        {/* ========================================================================= */}
-        {/* DYNAMIC LIVE INGESTION TELEMETRY (Derived strictly from live_backend) */}
-        {/* ========================================================================= */}
-        <div className="rounded-3xl bg-white p-6 border border-emerald-200 shadow-sm space-y-4">
+        {/* ─────────────────────────────────────────── */}
+        {/* MACRO KPI STRIP                             */}
+        {/* ─────────────────────────────────────────── */}
+        <div id="govt-kpis" className="scroll-mt-24 rounded-3xl bg-white p-6 border border-emerald-200 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
               <Activity className="w-5 h-5 text-emerald-700" />
               <div>
-                <h2 className="text-base font-bold text-slate-900">
-                  Real-Time PyTorch Diagnosis Ingestion Stream
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Aggregated telemetry calculated strictly from live farmer and officer diagnostic sessions.
-                </p>
+                <h2 className="text-base font-bold text-slate-900">Real-Time PyTorch Diagnosis Ingestion Stream</h2>
+                <p className="text-xs text-slate-500">Aggregated telemetry calculated strictly from live farmer and officer diagnostic sessions.</p>
               </div>
             </div>
-
             {govtAggregates.hasLiveDiagnoses ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse">
                 <span className="w-2 h-2 rounded-full bg-emerald-600" />
@@ -115,119 +153,68 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
             )}
           </div>
 
-          {/* 4 Live Metric Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="rounded-2xl p-4 bg-emerald-50/60 border border-emerald-200/80">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 block">
-                Live Diagnoses Ingested
-              </span>
-              <span className="text-3xl font-extrabold text-emerald-950 font-mono block mt-1">
-                {govtAggregates.liveDiagnosesCount}
-              </span>
-              <span className="text-[11px] text-emerald-700 font-medium">
-                {govtAggregates.hasLiveDiagnoses ? 'Synchronized with session' : 'Standby for camera/upload scans'}
-              </span>
+            <div className="rounded-2xl p-4 bg-emerald-50/60 border border-emerald-200/80 hover:shadow-sm transition-shadow">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 block">Live Diagnoses Ingested</span>
+              <span className="text-3xl font-extrabold text-emerald-950 font-mono block mt-1">{animatedLiveDiagnoses}</span>
+              <span className="text-[11px] text-emerald-700 font-medium">{govtAggregates.hasLiveDiagnoses ? 'Synchronized with session' : 'Standby for camera/upload scans'}</span>
             </div>
-
-            <div className="rounded-2xl p-4 bg-rose-50/60 border border-rose-200/80">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-rose-900 block">
-                Live Critical Outbreaks
-              </span>
-              <span className="text-3xl font-extrabold text-rose-600 font-mono block mt-1">
-                {govtAggregates.liveCriticalCount}
-              </span>
-              <span className="text-[11px] text-rose-700 font-medium">
-                {govtAggregates.liveCriticalCount > 0 ? 'Immediate containment dispatched' : 'No critical flags'}
-              </span>
+            <div className="rounded-2xl p-4 bg-rose-50/60 border border-rose-200/80 hover:shadow-sm transition-shadow">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-rose-900 block">Live Critical Outbreaks</span>
+              <span className={`text-3xl font-extrabold text-rose-600 font-mono block mt-1 ${govtAggregates.liveCriticalCount > 0 ? 'animate-pulse' : ''}`}>{animatedLiveCritical}</span>
+              <span className="text-[11px] text-rose-700 font-medium">{govtAggregates.liveCriticalCount > 0 ? 'Field verification flagged' : 'No critical flags'}</span>
             </div>
-
-            <div className="rounded-2xl p-4 bg-orange-50/60 border border-orange-200/80">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-orange-900 block">
-                High Priority Alerts
-              </span>
-              <span className="text-3xl font-extrabold text-orange-600 font-mono block mt-1">
-                {govtAggregates.liveHighPriorityCount}
-              </span>
-              <span className="text-[11px] text-orange-700 font-medium">
-                Officer verification scheduled
-              </span>
+            <div className="rounded-2xl p-4 bg-orange-50/60 border border-orange-200/80 hover:shadow-sm transition-shadow">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-orange-900 block">High Priority Alerts</span>
+              <span className="text-3xl font-extrabold text-orange-600 font-mono block mt-1">{animatedLiveHighPriority}</span>
+              <span className="text-[11px] text-orange-700 font-medium">Officer verification scheduled</span>
             </div>
-
-            <div className="rounded-2xl p-4 bg-blue-50/60 border border-blue-200/80">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-900 block">
-                Affected Crop Species
-              </span>
-              <span className="text-3xl font-extrabold text-blue-950 font-mono block mt-1">
-                {govtAggregates.affectedCropsCount}
-              </span>
-              <span className="text-[11px] text-blue-700 font-medium truncate block">
-                {govtAggregates.affectedCrops.length > 0 ? govtAggregates.affectedCrops.join(', ') : 'All crop species stable'}
-              </span>
+            <div className="rounded-2xl p-4 bg-blue-50/60 border border-blue-200/80 hover:shadow-sm transition-shadow">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-900 block">Affected Crop Species</span>
+              <span className="text-3xl font-extrabold text-blue-950 font-mono block mt-1">{govtAggregates.affectedCropsCount}</span>
+              <span className="text-[11px] text-blue-700 font-medium truncate block">{govtAggregates.affectedCrops.length > 0 ? govtAggregates.affectedCrops.join(', ') : 'All crop species stable'}</span>
             </div>
           </div>
         </div>
 
-        {/* ========================================================================= */}
-        {/* BASELINE REGIONAL DEMO ARCHIVE (Clearly Labeled as Baseline / Historical) */}
-        {/* ========================================================================= */}
+        {/* Baseline KPI Strip */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Building className="w-4 h-4 text-slate-500" />
-              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-mono">
-                State Historical Surveillance & Baseline Telemetry (Demo Archive)
-              </h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500 font-mono">State Historical Surveillance & Baseline Telemetry (Demo Archive)</h3>
             </div>
-            <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
-              Macro Pilot Benchmark
-            </span>
+            <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Macro Pilot Benchmark</span>
           </div>
-
-          {/* State-Level Macro KPIs (Baseline) */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-1">
-              <span className="text-xs text-slate-500 font-medium block">Total Field Diagnoses (Historical)</span>
-              <span className="text-3xl font-extrabold text-slate-900 font-mono block">
-                {(48290 + govtAggregates.liveDiagnosesCount).toLocaleString('en-IN')}
-              </span>
-              <span className="text-[11px] text-emerald-600 font-bold">+28% vs previous month</span>
-            </div>
-
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-1">
-              <span className="text-xs text-slate-500 font-medium block">Active Quarantine Clusters</span>
-              <span className="text-3xl font-extrabold text-rose-600 font-mono block">6 Clusters</span>
-              <span className="text-[11px] text-rose-600 font-bold">Yavatmal Pink Bollworm Red Alert</span>
-            </div>
-
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-1">
-              <span className="text-xs text-slate-500 font-medium block">Estimated Crop Value Protected</span>
-              <span className="text-3xl font-extrabold text-emerald-700 font-mono block">₹ 14.8 Cr</span>
-              <span className="text-[11px] text-emerald-600 font-bold">across 8 pilot districts</span>
-            </div>
-
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-1">
-              <span className="text-xs text-slate-500 font-medium block">KVK Agreement (DEMO / BASELINE)</span>
-              <span className="text-3xl font-extrabold text-blue-700 font-mono block">96.8%</span>
-              <span className="text-[11px] text-blue-600 font-bold">18 KVK Centers Connected</span>
-            </div>
+            {[
+              { label: 'Total Field Diagnoses (Historical)', value: (48290 + govtAggregates.liveDiagnosesCount).toLocaleString('en-IN'), sub: '+28% vs previous month', color: 'text-slate-900', subColor: 'text-emerald-600' },
+              { label: 'Active Quarantine Clusters', value: '6 Clusters', sub: 'Yavatmal Pink Bollworm Red Alert', color: 'text-rose-600', subColor: 'text-rose-600' },
+              { label: 'Estimated Crop Value Protected', value: '₹ 14.8 Cr', sub: 'across 8 pilot districts', color: 'text-emerald-700', subColor: 'text-emerald-600' },
+              { label: 'KVK Agreement (DEMO / BASELINE)', value: '96.8%', sub: '18 KVK Centers Connected', color: 'text-blue-700', subColor: 'text-blue-600' },
+            ].map((kpi, i) => (
+              <div key={i} className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-1 hover:shadow-sm transition-shadow">
+                <span className="text-xs text-slate-500 font-medium block">{kpi.label}</span>
+                <span className={`text-3xl font-extrabold font-mono block ${kpi.color}`}>{kpi.value}</span>
+                <span className={`text-[11px] font-bold ${kpi.subColor}`}>{kpi.sub}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* 2-Column Section */}
+        {/* ─────────────────────────────────────────── */}
+        {/* TWO-COLUMN: TABLE + SPREAD CONE / STOCK    */}
+        {/* ─────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* ========================================================= */}
-          {/* LEFT: District Epidemiology Surveillance Table */}
-          {/* ========================================================= */}
-          <div className="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+
+          {/* LEFT: District Surveillance Table */}
+          <div id="govt-table" className="lg:col-span-7 scroll-mt-24 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center space-x-2">
                 <BarChart3 className="w-5 h-5 text-emerald-700" />
-                <h2 className="text-base font-bold text-slate-900">
-                  District Outbreak & Surveillance Breakdown (DEMO / BASELINE)
-                </h2>
+                <h2 className="text-base font-bold text-slate-900">District Outbreak & Surveillance Breakdown (DEMO / BASELINE)</h2>
               </div>
-              <button 
+              <button
                 onClick={() => alert('Downloading official Maharashtra crop epidemiology report PDF...')}
                 className="text-xs text-emerald-800 font-bold flex items-center space-x-1 hover:underline cursor-pointer"
               >
@@ -235,7 +222,6 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
                 <span>Export State Report</span>
               </button>
             </div>
-
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
@@ -243,54 +229,119 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
                     <th className="py-2.5 px-3">District</th>
                     <th className="py-2.5 px-3">Primary Pathogen</th>
                     <th className="py-2.5 px-3">Active Cases</th>
-                    <th className="py-2.5 px-3">Risk Rating</th>
+                    <th className="py-2.5 px-3">Wind</th>
+                    <th className="py-2.5 px-3">Risk</th>
                     <th className="py-2.5 px-3">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                  {maharashtraDistricts.map((dist) => (
-                    <tr key={dist.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-3">
-                        <span className="font-bold text-slate-900 block">{dist.name}</span>
-                        <span className="text-[10px] text-slate-400 font-normal">{dist.marathiName}</span>
-                      </td>
-                      <td className="py-3 px-3 text-[11px] max-w-[140px] truncate">
-                        {dist.majorDisease}
-                      </td>
-                      <td className="py-3 px-3 font-mono font-bold text-slate-900">
-                        {dist.activeCases}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          dist.riskLevel === 'Critical' ? 'bg-rose-100 text-rose-800' : dist.riskLevel === 'High' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-                        }`}>
-                          {dist.riskLevel}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3">
-                        <button
-                          onClick={() => {
-                            onNavigate('hotspots');
-                          }}
-                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 text-[10px] font-bold transition-colors cursor-pointer"
-                        >
-                          View GIS
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {maharashtraDistricts.map((dist) => {
+                    const wind = DISTRICT_WIND[dist.name] || { dir: '—' };
+                    return (
+                      <tr key={dist.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-3">
+                          <span className="font-bold text-slate-900 block">{dist.name}</span>
+                          <span className="text-[10px] text-slate-400 font-normal">{dist.marathiName}</span>
+                        </td>
+                        <td className="py-3 px-3 text-[11px] max-w-[130px] truncate">{dist.majorDisease}</td>
+                        <td className="py-3 px-3 font-mono font-bold text-slate-900">{dist.activeCases}</td>
+                        <td className="py-3 px-3">
+                          <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">{wind.dir}</span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            dist.riskLevel === 'Critical' ? 'bg-rose-100 text-rose-800 animate-pulse' :
+                            dist.riskLevel === 'High' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {dist.riskLevel}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <button
+                            onClick={() => onNavigate('hotspots')}
+                            className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg border border-emerald-200 text-[10px] font-bold transition-colors cursor-pointer"
+                          >
+                            View GIS
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* ========================================================= */}
-          {/* RIGHT: Input Supply Chain & Active Learning Continuous Training */}
-          {/* ========================================================= */}
+          {/* RIGHT: Spread Cone + Stock + Retraining */}
           <div className="lg:col-span-5 space-y-6">
-            
-            {/* 1. Agro-Chemical & Bio-Input Buffer Stock Monitor */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+
+            {/* ── Spread Cone SVG Visualization ── */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <Wind className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-base font-bold text-slate-900">
+                    Spread Cone Predictor
+                    <span className="text-[10px] text-slate-500 ml-2 font-normal">(DEMO / BASELINE)</span>
+                  </h3>
+                </div>
+                <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-bold">3-Day Risk</span>
+              </div>
+
+              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-[10px] text-slate-600 mb-2">
+                Seeded Maharashtra monsoon wind directions. Cones show predicted 3-day pathogen spread trajectory based on wind + humidity. Critical districts emit larger cones.
+                <span className="ml-1 text-rose-600 font-bold">[DEMO / BASELINE] Epidemiological Spread Simulation — not real-time GIS data.</span>
+              </div>
+
+              {/* SVG District Grid */}
+              <svg viewBox="0 0 100 100" className="w-full h-64 rounded-2xl bg-[#E8F5F0]" style={{ fontFamily: 'monospace' }}>
+                {/* District nodes + wind cones */}
+                {Object.entries(DISTRICT_WIND).map(([name, info]) => {
+                  const dist = maharashtraDistricts.find(d => d.name === name);
+                  const isCritical = dist?.riskLevel === 'Critical';
+                  const isHigh = dist?.riskLevel === 'High';
+                  const coneColor = isCritical ? 'rgba(239,68,68,0.2)' : isHigh ? 'rgba(245,158,11,0.15)' : 'rgba(52,211,153,0.1)';
+                  const coneBorder = isCritical ? 'rgba(239,68,68,0.6)' : isHigh ? 'rgba(245,158,11,0.5)' : 'rgba(52,211,153,0.4)';
+                  const nodeColor = isCritical ? '#ef4444' : isHigh ? '#f59e0b' : '#10b981';
+                  const coneRadius = isCritical ? 22 : isHigh ? 16 : 10;
+
+                  return (
+                    <g key={name}>
+                      {/* Wind spread cone */}
+                      <path
+                        d={coneArc(info.cx, info.cy, info.angleDeg, coneRadius, CONE_HALF_ANGLE)}
+                        fill={coneColor}
+                        stroke={coneBorder}
+                        strokeWidth="0.3"
+                        opacity="0.85"
+                      />
+                      {/* District node */}
+                      <circle cx={info.cx} cy={info.cy} r={isCritical ? 3.5 : 2.5} fill={nodeColor} opacity="0.9" />
+                      {/* Wind direction label */}
+                      <text x={info.cx + 4} y={info.cy - 3.5} fontSize="2.5" fill="#475569" fontWeight="bold">{info.dir}</text>
+                      {/* District name */}
+                      <text x={info.cx} y={info.cy + 5.5} fontSize="2.2" fill="#1e293b" textAnchor="middle" fontWeight="600">{name}</text>
+                    </g>
+                  );
+                })}
+                {/* Legend */}
+                <g transform="translate(2, 88)">
+                  <circle cx="2" cy="2" r="1.5" fill="#ef4444" />
+                  <text x="5" y="3.2" fontSize="2.2" fill="#475569">Critical</text>
+                  <circle cx="22" cy="2" r="1.5" fill="#f59e0b" />
+                  <text x="25" y="3.2" fontSize="2.2" fill="#475569">High</text>
+                  <circle cx="40" cy="2" r="1.5" fill="#10b981" />
+                  <text x="43" y="3.2" fontSize="2.2" fill="#475569">Monitored</text>
+                </g>
+              </svg>
+
+              <div className="text-[10px] text-slate-500 italic text-center">
+                Cone arc direction = seeded monsoon wind · Cone size ∝ district risk level · Nashik (NE), Yavatmal (SW), Amravati (SW), Jalgaon (NE), Pune (W), Ahmednagar (NW), Kolhapur (SW), Aurangabad (E)
+              </div>
+            </div>
+
+            {/* ── Input Buffer Stock Auto-Alert ── */}
+            <div id="govt-stock" className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4 hover:shadow-md transition-shadow scroll-mt-24">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-2">
                   <Package className="w-5 h-5 text-amber-600" />
@@ -301,35 +352,82 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
                 <span className="text-[10px] text-slate-500 font-mono">Baseline Inventory</span>
               </div>
 
-              <div className="space-y-2.5">
-                {supplyChainStocks.map((item, idx) => (
-                  <div key={idx} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-                    <div className="flex items-center justify-between font-bold text-slate-900">
-                      <span>{item.molecule}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono ${
-                        item.status === 'Warning' ? 'bg-rose-100 text-rose-800 font-bold' : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        {item.stockMetric}
-                      </span>
+              <div className="space-y-3">
+                {stocks.map((item) => {
+                  const isLow = item.stockPct <= 28;
+                  const isMedium = item.stockPct > 28 && item.stockPct < 50;
+                  const alertSent = procurementAlerts[item.id];
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-3 rounded-2xl border text-xs space-y-2 transition-all hover:shadow-sm ${
+                        isLow
+                          ? 'bg-rose-50 border-rose-300 shadow-rose-100 shadow-sm'
+                          : isMedium
+                          ? 'bg-amber-50 border-amber-200'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="font-bold text-slate-900 block">{item.molecule}</span>
+                          <span className="text-[10px] text-slate-500">Target: {item.target}</span>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border ${
+                            isLow ? 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse' :
+                            isMedium ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                            'bg-emerald-100 text-emerald-800 border-emerald-200'
+                          }`}>
+                            {item.stockPct}% {isLow ? '— 🚨 LOW' : isMedium ? '— ⚠️ Monitor' : '— Adequate'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Stock bar */}
+                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            isLow ? 'bg-rose-500' : isMedium ? 'bg-amber-400' : 'bg-emerald-500'
+                          }`}
+                          style={{ width: `${item.stockPct}%` }}
+                        />
+                      </div>
+
+                      <span className="text-[10px] text-slate-500 block">Warehouses: {item.district}</span>
+
+                      {/* Auto-alert + procurement button for low stock */}
+                      {isLow && (
+                        <div className="space-y-1.5">
+                          <div className="p-2 rounded-xl bg-rose-100 border border-rose-300 text-[10px] text-rose-800 font-bold flex items-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 animate-pulse" />
+                            AUTO-ALERT: Stock at or below 28% reorder threshold. Procurement advisory generated.
+                          </div>
+                          <button
+                            onClick={() => handleEmergencyProcurement(item.id, item.molecule)}
+                            disabled={alertSent}
+                            className="w-full py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-70 transition-all"
+                          >
+                            <Zap className="w-3 h-3" />
+                            {alertSent ? '✓ Emergency Procurement Order Sent' : 'Trigger Emergency Procurement'}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <span className="text-[11px] text-slate-500 block">Warehouses: {item.district}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
-            {/* 2. Active Learning Pipeline & Model Retraining */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+            {/* ── Active Learning Pipeline ── */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center space-x-2">
                   <Cpu className="w-5 h-5 text-purple-600" />
-                  <h3 className="text-base font-bold text-slate-900">
-                    Continuous Learning Pipeline (DEMO / BASELINE)
-                  </h3>
+                  <h3 className="text-base font-bold text-slate-900">Continuous Learning Pipeline (DEMO / BASELINE)</h3>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-900 font-mono">
-                  DEMO SIMULATION
-                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-900 font-mono">DEMO SIMULATION</span>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 text-xs space-y-2">
@@ -352,9 +450,7 @@ export const GovtCommandCenter = ({ currentLang, onNavigate }) => {
                 className="w-full py-3 bg-[#0F382A] hover:bg-[#164E3A] text-white rounded-2xl text-xs font-bold transition-all shadow flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 text-amber-400 ${isRetraining ? 'animate-spin' : ''}`} />
-                <span>
-                  {isRetraining ? 'Simulating Model Fine-Tuning Job...' : 'Simulate Model Fine-Tuning Pipeline (Demo)'}
-                </span>
+                <span>{isRetraining ? 'Simulating Model Fine-Tuning Job...' : 'Simulate Model Fine-Tuning Pipeline (Demo)'}</span>
               </button>
             </div>
 
