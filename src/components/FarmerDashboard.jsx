@@ -165,7 +165,7 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
   } = useDiagnosis();
 
   const farmer = {
-    name: 'Ramesh Patil',
+    name: 'Arjun Kale',
     location: 'Nashik District, Maharashtra · 4.5 acres under cultivation',
     acres: farmerAcreage,
     totalScans: farmerStats.totalScans,

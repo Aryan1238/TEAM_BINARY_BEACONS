@@ -165,7 +165,7 @@ export const ExtensionOfficerDashboard = ({ currentLang, onNavigate, onRoleChang
               <span className="text-xs text-emerald-300 font-mono">Nashik Division · Sub-District Niphad</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-              {t.officerName || 'Extension Officer: Dilip Shinde (दिलीप शिंदे)'}
+              {t.officerName || 'Extension Officer: Aryan Nakte Gupta'}
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
               {t.subTitle || 'Supervising 28 Village Clusters · 420 Active Farmers'} · {pendingCount} {t.pendingVerification || 'Pending Ground-Truth Validations'}

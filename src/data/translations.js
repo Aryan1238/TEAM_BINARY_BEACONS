@@ -6,7 +6,7 @@ export const rawTranslations = {
       features: 'Features',
       howItWorks: 'How It Works',
       forFarmers: 'For Farmers',
-      dashboard: 'Role Hub',
+      dashboard: 'Dashboard',
       signIn: 'Sign In',
       getStarted: 'Get Started Free',
       scanCrop: 'Scan Your Crop',

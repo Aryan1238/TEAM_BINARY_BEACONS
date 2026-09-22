@@ -8,7 +8,7 @@ export const uiTranslations = {
       weather: 'Weather Risk',
       hotspots: 'Hotspot GIS',
       ipm: 'CIBRC Dosage',
-      dashboard: 'Role Hub',
+      dashboard: 'Dashboard',
       farmer: '🌾 Farmer',
       officer: '🧑‍🌾 Officer',
       govt: '🏛️ Govt',
@@ -159,7 +159,7 @@ export const uiTranslations = {
     },
     officer: {
       workspaceTag: 'Extension Officer Field Workspace (कृषी सहाय्यक)',
-      officerName: 'Extension Officer: Dilip Shinde (दिलीप शिंदे)',
+      officerName: 'Extension Officer: Aryan Nakte Gupta',
       subTitle: 'Supervising 28 Village Clusters · 420 Active Farmers',
       liveDiagnoses: 'Live AI Diagnoses:',
       criticalHigh: 'Critical / High:',
@@ -379,7 +379,7 @@ export const uiTranslations = {
     },
     officer: {
       workspaceTag: 'कृषि विस्तार अधिकारी कार्यक्षेत्र (कृषि सहायक)',
-      officerName: 'विस्तार अधिकारी: दिलीप शिंदे',
+      officerName: 'विस्तार अधिकारी: Aryan Nakte Gupta',
       subTitle: '28 ग्राम समूह · 420 सक्रिय किसान · प्रत्यक्ष सत्यापन कार्य',
       liveDiagnoses: 'लाइव एआई निदान:',
       criticalHigh: 'गंभीर / उच्च जोखिम:',
@@ -599,7 +599,7 @@ export const uiTranslations = {
     },
     officer: {
       workspaceTag: 'कृषी सहाय्यक अधिकारी कार्यक्षेत्र',
-      officerName: 'कृषी सहाय्यक अधिकारी: दिलीप शिंदे',
+      officerName: 'कृषी सहाय्यक अधिकारी: Aryan Nakte Gupta',
       subTitle: '२८ गाव गट · ४२० सक्रिय शेतकरी · प्रत्यक्ष पडताळणी कार्य',
       liveDiagnoses: 'थेट एआय निदान:',
       criticalHigh: 'अतिगंभीर / उच्च जोखीम:',

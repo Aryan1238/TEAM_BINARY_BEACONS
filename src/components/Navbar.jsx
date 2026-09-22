@@ -8,7 +8,6 @@ import {
   CloudRain, 
   MapPin, 
   Calculator, 
-  UserCheck, 
   Menu, 
   X,
   Scan,
@@ -31,15 +30,15 @@ export const Navbar = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const tNav = getUiTranslation(currentLang).nav;
 
-  // Role switch: updates role context without forcing dashboard navigation
-  const handleRoleChange = (role) => {
+  // Role switch: sets role and navigates directly to that role's workspace
+  const handleRoleNavigate = (role) => {
     onRoleChange(role);
+    onNavigate('dashboard');
     setMobileMenuOpen(false);
   };
 
   const navItems = [
     { id: 'landing', label: tNav.home || 'Home', icon: Sprout },
-    { id: 'dashboard', label: tNav.dashboard || 'Role Hub', icon: UserCheck },
     { id: 'diagnosis', label: tNav.diagnosis || 'AI Diagnosis & YOLO', icon: Camera, highlight: true },
     { id: 'weather', label: tNav.weather || 'Weather Risk', icon: CloudRain },
     { id: 'hotspots', label: tNav.hotspots || 'Hotspot GIS', icon: MapPin },
@@ -151,12 +150,12 @@ export const Navbar = ({
           {/* RIGHT: Role Switcher, Language & YOLO */}
           <div className="flex items-center space-x-2 shrink-0 ml-auto lg:ml-0">
             
-            {/* Role Switcher — each button updates role persona */}
+            {/* Role Switcher — each button navigates directly to respective role workspace */}
             <div className="hidden sm:flex bg-[#071F17] p-0.5 rounded-xl border border-emerald-800 items-center shrink-0">
               <button
-                onClick={() => handleRoleChange('farmer')}
+                onClick={() => handleRoleNavigate('farmer')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  currentRole === 'farmer' 
+                  currentRole === 'farmer' && activeView === 'dashboard'
                     ? 'bg-emerald-700 text-white shadow-sm' 
                     : 'text-emerald-300/80 hover:text-white'
                 }`}
@@ -164,9 +163,9 @@ export const Navbar = ({
                 {tNav.farmer || '🌾 Farmer'}
               </button>
               <button
-                onClick={() => handleRoleChange('officer')}
+                onClick={() => handleRoleNavigate('officer')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  currentRole === 'officer' 
+                  currentRole === 'officer' && activeView === 'dashboard'
                     ? 'bg-emerald-700 text-white shadow-sm' 
                     : 'text-emerald-300/80 hover:text-white'
                 }`}
@@ -174,9 +173,9 @@ export const Navbar = ({
                 {tNav.officer || '🧑‍🌾 Officer'}
               </button>
               <button
-                onClick={() => handleRoleChange('govt')}
+                onClick={() => handleRoleNavigate('govt')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  currentRole === 'govt' 
+                  currentRole === 'govt' && activeView === 'dashboard'
                     ? 'bg-emerald-700 text-white shadow-sm' 
                     : 'text-emerald-300/80 hover:text-white'
                 }`}
@@ -249,9 +248,9 @@ export const Navbar = ({
               {['farmer', 'officer', 'govt'].map(r => (
                 <button
                   key={r}
-                  onClick={() => handleRoleChange(r)}
+                  onClick={() => handleRoleNavigate(r)}
                   className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    currentRole === r ? 'bg-emerald-600 text-white' : 'bg-emerald-950 text-emerald-300'
+                    currentRole === r && activeView === 'dashboard' ? 'bg-emerald-600 text-white' : 'bg-emerald-950 text-emerald-300'
                   }`}
                 >
                   {r === 'farmer' ? '🌾 Farmer' : r === 'officer' ? '🧑‍🌾 Officer' : '🏛️ Govt'}

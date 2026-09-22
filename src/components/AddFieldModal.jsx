@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
 import { X, Sprout, Plus } from 'lucide-react';
+import { PLANTVILLAGE_DISEASE_REGISTRY } from '../data/plantVillageRegistry';
+
+// Derive unique crop names strictly from the ML dataset/class taxonomy
+export const DATASET_CROPS = Array.from(
+  new Set(
+    Object.keys(PLANTVILLAGE_DISEASE_REGISTRY).map((cls) => {
+      const rawCrop = cls.split('___')[0];
+      return rawCrop.replace(/_/g, ' ').replace(/\(maize\)/i, '(Maize)').trim();
+    })
+  )
+).sort((a, b) => a.localeCompare(b));
 
 export const AddFieldModal = ({ isOpen, onClose, onAddField }) => {
   const [name, setName] = useState('');
-  const [crop, setCrop] = useState('Soybean');
+  const [crop, setCrop] = useState(DATASET_CROPS[0] || 'Apple');
   const [acres, setAcres] = useState('1.5');
 
   if (!isOpen) return null;
@@ -78,14 +89,11 @@ export const AddFieldModal = ({ isOpen, onClose, onAddField }) => {
                 onChange={(e) => setCrop(e.target.value)}
                 className="w-full p-2.5 rounded-xl border border-stone-200 bg-white text-xs font-medium text-stone-900 focus:outline-emerald-600"
               >
-                <option value="Tomato">Tomato</option>
-                <option value="Cotton">Cotton</option>
-                <option value="Wheat">Wheat</option>
-                <option value="Soybean">Soybean</option>
-                <option value="Sugarcane">Sugarcane</option>
-                <option value="Grapes">Grapes</option>
-                <option value="Pomegranate">Pomegranate</option>
-                <option value="Onion">Onion</option>
+                {DATASET_CROPS.map((cropName) => (
+                  <option key={cropName} value={cropName}>
+                    {cropName}
+                  </option>
+                ))}
               </select>
             </div>
 
