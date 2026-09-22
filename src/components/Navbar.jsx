@@ -31,15 +31,15 @@ export const Navbar = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const tNav = getUiTranslation(currentLang).nav;
 
-  // Role switch: sets role AND navigates to dashboard
-  const handleRoleAndNavigate = (role) => {
+  // Role switch: updates role context without forcing dashboard navigation
+  const handleRoleChange = (role) => {
     onRoleChange(role);
-    onNavigate('dashboard');
     setMobileMenuOpen(false);
   };
 
   const navItems = [
     { id: 'landing', label: tNav.home || 'Home', icon: Sprout },
+    { id: 'dashboard', label: tNav.dashboard || 'Role Hub', icon: UserCheck },
     { id: 'diagnosis', label: tNav.diagnosis || 'AI Diagnosis & YOLO', icon: Camera, highlight: true },
     { id: 'weather', label: tNav.weather || 'Weather Risk', icon: CloudRain },
     { id: 'hotspots', label: tNav.hotspots || 'Hotspot GIS', icon: MapPin },
@@ -151,10 +151,10 @@ export const Navbar = ({
           {/* RIGHT: Role Switcher, Language & YOLO */}
           <div className="flex items-center space-x-2 shrink-0 ml-auto lg:ml-0">
             
-            {/* Role Switcher — each button sets role + navigates to dashboard */}
+            {/* Role Switcher — each button updates role persona */}
             <div className="hidden sm:flex bg-[#071F17] p-0.5 rounded-xl border border-emerald-800 items-center shrink-0">
               <button
-                onClick={() => handleRoleAndNavigate('farmer')}
+                onClick={() => handleRoleChange('farmer')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   currentRole === 'farmer' 
                     ? 'bg-emerald-700 text-white shadow-sm' 
@@ -164,7 +164,7 @@ export const Navbar = ({
                 {tNav.farmer || '🌾 Farmer'}
               </button>
               <button
-                onClick={() => handleRoleAndNavigate('officer')}
+                onClick={() => handleRoleChange('officer')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   currentRole === 'officer' 
                     ? 'bg-emerald-700 text-white shadow-sm' 
@@ -174,7 +174,7 @@ export const Navbar = ({
                 {tNav.officer || '🧑‍🌾 Officer'}
               </button>
               <button
-                onClick={() => handleRoleAndNavigate('govt')}
+                onClick={() => handleRoleChange('govt')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   currentRole === 'govt' 
                     ? 'bg-emerald-700 text-white shadow-sm' 
@@ -203,7 +203,7 @@ export const Navbar = ({
 
             {/* Primary Action: YOLO Live Vision */}
             <button
-              onClick={() => onNavigate('diagnosis')}
+              onClick={() => onNavigate('diagnosis', 'camera')}
               className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-400 hover:from-amber-300 hover:to-amber-500 text-emerald-950 font-extrabold px-3.5 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition-all flex items-center space-x-1.5 cursor-pointer shrink-0 transform hover:scale-102 active:scale-98"
             >
               <Camera className="w-4 h-4 text-emerald-950" />
@@ -249,7 +249,7 @@ export const Navbar = ({
               {['farmer', 'officer', 'govt'].map(r => (
                 <button
                   key={r}
-                  onClick={() => handleRoleAndNavigate(r)}
+                  onClick={() => handleRoleChange(r)}
                   className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     currentRole === r ? 'bg-emerald-600 text-white' : 'bg-emerald-950 text-emerald-300'
                   }`}

@@ -44,7 +44,7 @@ export const runUniversalCropDiagnosis = async (file) => {
   try {
     console.log(`🚀 Sending image to PyTorch EfficientNet-B0 Backend (${ANALYZE_ENDPOINT})...`);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout for neural inference + gradcam
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout to allow Render free-tier cold starts
 
     const formData = new FormData();
     formData.append('file', file);
@@ -173,8 +173,12 @@ export const runUniversalCropDiagnosis = async (file) => {
     console.error('❌ PyTorch EfficientNet-B0 Backend Error:', backendErr);
     const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
     const isLocalBackend = ANALYZE_ENDPOINT.includes('127.0.0.1') || ANALYZE_ENDPOINT.includes('localhost');
+    const isAbort = backendErr.name === 'AbortError';
+
     let helpfulMsg = `Cannot connect to PyTorch EfficientNet-B0 backend at ${ANALYZE_ENDPOINT}: ${backendErr.message}.`;
-    if (isHttps && isLocalBackend) {
+    if (isAbort) {
+      helpfulMsg = `The AI inference backend at ${ANALYZE_ENDPOINT} took longer than 60s to respond. On cloud services like Render, the free tier sleeps when idle and requires 45–60s to wake up on first request. The backend is likely awake now—please try uploading your photo again.`;
+    } else if (isHttps && isLocalBackend) {
       helpfulMsg += ` This app is served over HTTPS (cloud deployment), but the backend URL points to localhost. Cloud deployments require setting the VITE_BACKEND_URL repository secret in GitHub to your live service URL. For local testing, ensure your local backend is running (uvicorn main:app --reload on port 8000).`;
     } else {
       helpfulMsg += ` Please ensure the backend server is running ('uvicorn main:app --reload' on port 8000).`;
@@ -185,7 +189,7 @@ export const runUniversalCropDiagnosis = async (file) => {
       validationError: true,
       errorCode: 'BACKEND_CONNECTION_ERROR',
       message: helpfulMsg,
-      statusMessage: `⚠️ Backend Connection Failed: ${backendErr.message}`,
+      statusMessage: isAbort ? `⚠️ Backend Wakeup Timeout (Cold Start)` : `⚠️ Backend Connection Failed: ${backendErr.message}`,
       source: 'PyTorch EfficientNet-B0 (Backend Offline)',
       previewUrl: dataUrl
     };

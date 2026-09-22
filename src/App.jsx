@@ -16,18 +16,20 @@ function AppContent() {
   const [currentLang, setCurrentLang] = useState('en'); // 'en' | 'mr' | 'hi'
   const [currentRole, setCurrentRole] = useState('farmer'); // 'farmer' | 'officer' | 'govt'
   const [activeView, setActiveView] = useState('landing'); // 'landing' | 'diagnosis' | 'weather' | 'hotspots' | 'ipm' | 'dashboard'
+  const [diagnosisModality, setDiagnosisModality] = useState('camera');
   const [selectedDiseaseForIPM, setSelectedDiseaseForIPM] = useState(cropDiseases[0]);
   const [smsSimOpen, setSmsSimOpen] = useState(false);
 
-  const handleNavigate = (viewId) => {
+  const handleNavigate = (viewId, modality) => {
     setActiveView(viewId);
+    if (viewId === 'diagnosis' && modality) {
+      setDiagnosisModality(modality);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleRoleChange = (role) => {
     setCurrentRole(role);
-    setActiveView('dashboard');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectDiseaseForIPM = (disease) => {
@@ -68,6 +70,7 @@ function AppContent() {
             onRoleChange={handleRoleChange}
             onSelectDiseaseForIPM={handleSelectDiseaseForIPM}
             onEscalateKVK={handleEscalateKVK}
+            initialModality={diagnosisModality}
           />
         )}
 
