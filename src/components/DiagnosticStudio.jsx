@@ -59,9 +59,16 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onRoleChange, onSele
 
   // Device Live Camera State
   const videoRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraFacing, setCameraFacing] = useState('environment');
   const [torchOn, setTorchOn] = useState(false);
+
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
 
   // Web Audio API Browser Alarm Synthesizer (Fallback when ESP32 hooter unavailable)
   const audioCtxRef = useRef(null);
@@ -551,7 +558,14 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onRoleChange, onSele
 
   // Handle User Photo Upload
   const handleCustomUpload = async (e) => {
-    const file = e.target.files?.[0];
+    const inputEl = e.target;
+    const file = inputEl?.files?.[0];
+
+    // Safely clear input value so selecting the exact same file again still fires change event
+    if (inputEl) {
+      inputEl.value = '';
+    }
+
     if (!file) return;
 
     console.log('[Upload Photo Selected]: File ->', file.name, `(${file.size} bytes, type: ${file.type})`);
@@ -1182,6 +1196,18 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onRoleChange, onSele
             {inputModality === 'photo' && (
               <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm space-y-5">
                 
+                {/* Accessible hidden file input for photo upload */}
+                <input
+                  id="leaf-photo-file-input"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCustomUpload}
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+
                 {/* Upload Action Zone */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
@@ -1193,11 +1219,14 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onRoleChange, onSele
                     </p>
                   </div>
 
-                  <label className="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 cursor-pointer transition-transform hover:scale-102 shadow-md">
+                  <button
+                    type="button"
+                    onClick={triggerFileInput}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 cursor-pointer transition-transform hover:scale-102 shadow-md"
+                  >
                     <Upload className="w-4 h-4 text-amber-300" />
                     <span>Upload Leaf Photo &rarr;</span>
-                    <input type="file" accept="image/*" onChange={handleCustomUpload} className="hidden" />
-                  </label>
+                  </button>
                 </div>
 
                 {/* AI API Status Badge */}
@@ -1283,11 +1312,14 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onRoleChange, onSele
                     )}
 
                     <div className="flex items-center space-x-3 pt-1">
-                      <label className="bg-amber-400 hover:bg-amber-300 text-emerald-950 px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center space-x-2 cursor-pointer shadow-md transition-transform hover:scale-102">
+                      <button
+                        type="button"
+                        onClick={triggerFileInput}
+                        className="bg-amber-400 hover:bg-amber-300 text-emerald-950 px-4 py-2.5 rounded-xl text-xs font-extrabold flex items-center space-x-2 cursor-pointer shadow-md transition-transform hover:scale-102"
+                      >
                         <Upload className="w-4 h-4" />
                         <span>Upload New Leaf Photo</span>
-                        <input type="file" accept="image/*" onChange={handleCustomUpload} className="hidden" />
-                      </label>
+                      </button>
                     </div>
                   </div>
                 ) : !selectedCase ? (
@@ -1301,11 +1333,14 @@ export const DiagnosticStudio = ({ currentLang, onNavigate, onRoleChange, onSele
                         Upload a crop leaf photograph to run PyTorch EfficientNet-B0 inference, pre-inference quality validation, and Grad-CAM explainability.
                       </p>
                     </div>
-                    <label className="bg-emerald-700 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 cursor-pointer shadow transition-transform hover:scale-102">
+                    <button
+                      type="button"
+                      onClick={triggerFileInput}
+                      className="bg-emerald-700 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 cursor-pointer shadow transition-transform hover:scale-102"
+                    >
                       <Upload className="w-4 h-4 text-amber-300" />
                       <span>Choose Leaf Photo &rarr;</span>
-                      <input type="file" accept="image/*" onChange={handleCustomUpload} className="hidden" />
-                    </label>
+                    </button>
                   </div>
                 ) : (
                   <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-950 border border-slate-800 shadow-inner group">
