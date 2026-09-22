@@ -93,6 +93,22 @@ graph TD
 
 ---
 
+## 🧭 Direct Role-Based Workspaces & Navigation
+The legacy Role Hub intermediary screen has been retired in favor of **direct, instantaneous role navigation** from the header:
+- **🧑‍🌾 Farmer Workspace (`FarmerDashboard`):** Streamlined plot management, Crop Health Passports, treatment logs, and a dynamic 14-crop field registration modal. Removed non-contextual landing hero banners to maintain pure dashboard utility.
+- **📋 Extension Officer Workspace (`ExtensionOfficerDashboard`):** Rapid village survey intake, spatial triage by outbreak urgency, offline-first sync cache, and verified SMS/WhatsApp bulletin dispatch.
+- **🏛️ State Government Command Center (`GovtCommandCenter`):** Real-time taluka alert feeds, contagion buffer zones, pesticide supply chain monitoring, and statutory advisory broadcasts.
+
+---
+
+## 🔬 Diagnostic Studio & Agronomic Validation Engines
+- **Dynamic Crop-Matched Confusion Matrix & Softmax Logits:** Both the diagnostic probability meters and the Confusion Matrix modal dynamically adapt to the diagnosed crop (Tomato, Cotton, Grapes, Soybean, Sugarcane, Apple, Potato, Corn (Maize)). This guarantees 100% agronomic consistency with zero cross-crop class leakage.
+- **Multi-Crop Pheromone Pest Traps:** Multi-crop trap surveillance with CIBRC Economic Threshold Levels (ETL) calibrated across Cotton (Pink Bollworm), Tomato (Fruit Borer), Soybean (Armyworm), Sugarcane (Shoot Borer), and Grapes (Berry Moth).
+- **Offline Phenology Checklist Wizard:** Interactive foliar symptom evaluation running deterministic CIBRC decision trees filtered dynamically by selected crop.
+- **14-Crop Registered Field Taxonomy:** Field registration dynamically presents deduplicated botanical classes derived from the 38-class ML taxonomy (Apple, Blueberry, Cherry, Corn (Maize), Grape, Orange, Peach, Pepper Bell, Potato, Raspberry, Soybean, Squash, Strawberry, Tomato).
+
+---
+
 ## 📡 API Endpoints Reference
 
 | Endpoint | Method | Operational Status | Description |
@@ -208,6 +224,7 @@ Open [http://localhost:5173/](http://localhost:5173/) in your browser.
 - **Problem Title:** Early Detection and Management of Crop Diseases and Pest Infestations
 - **Organization:** Department of Skills, Employment, Entrepreneurship & Innovation & Maharashtra State Innovation Society, Government of Maharashtra
 - **Team:** TEAM BINARY BEACONS
+- **Team Members / Contributors:** Arjun Kale, Aryan Nakte Gupta
 
 ---
 

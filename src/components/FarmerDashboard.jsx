@@ -24,7 +24,6 @@ import { useDiagnosis } from '../context/DiagnosisContext';
 import { cropDiseases } from '../data/cropDiseases';
 import { useCountUp } from '../hooks/useCountUp';
 import { getUiTranslation } from '../data/uiTranslations';
-import { KrushiHeroSection } from './KrushiHeroSection';
 
 // Field Health Action Timeline Component
 const FieldHealthTimeline = ({ timelineStep = 'Scan Completed', priority = 'WATCH', timestamp = 'Just now', currentLang = 'en' }) => {
@@ -922,15 +921,6 @@ export const FarmerDashboard = ({ currentLang, onNavigate }) => {
             setSelectedField(null);
             onNavigate?.(destination);
           }}
-        />
-      )}
-
-      {/* Signature KrushiRaksha Hero Experience */}
-      {viewMode !== 'mobile' && (
-        <KrushiHeroSection
-          currentLang={currentLang}
-          onNavigate={onNavigate}
-          isFarmerDashboard={true}
         />
       )}
 
