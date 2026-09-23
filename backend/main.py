@@ -115,6 +115,7 @@ class HooterTriggerRequest(BaseModel):
 # HOME & HEALTH ENDPOINTS
 # ============================================================
 @app.get("/")
+@app.head("/")
 def home():
     return {
         "success": True,
@@ -128,6 +129,7 @@ def home():
 
 
 @app.get("/health")
+@app.head("/health")
 def health():
     yolo_stat = yolo_manager.get_status()
     return {
@@ -248,8 +250,10 @@ def validate_uploaded_image(image_bytes: bytes, content_type: str):
             "validation_status": "FAILED"
         }, None
 
-    # Grayscale array for photometric and blur inspection
-    gray_arr = np.array(pil_img.convert("L"), dtype=np.float64)
+    # Lightweight standardized 256x256 buffer for photometric and blur inspection
+    # Standardizing to 256x256 prevents 300-400MB memory spikes from high-resolution phone camera uploads
+    check_img = pil_img.resize((256, 256), resample=Image.Resampling.BILINEAR)
+    gray_arr = np.array(check_img.convert("L"), dtype=np.float32)
 
     # 5. Brightness / exposure check (0-255 scale)
     mean_brightness = float(np.mean(gray_arr))
@@ -270,16 +274,15 @@ def validate_uploaded_image(image_bytes: bytes, content_type: str):
         }, None
 
     # 6. Blur detection via Laplacian variance
-    if gray_arr.shape[0] >= 3 and gray_arr.shape[1] >= 3:
-        lap = gray_arr[:-2, 1:-1] + gray_arr[2:, 1:-1] + gray_arr[1:-1, :-2] + gray_arr[1:-1, 2:] - 4.0 * gray_arr[1:-1, 1:-1]
-        lap_var = float(np.var(lap))
-        if lap_var < cfg["blur_variance_threshold"]:
-            return False, {
-                "success": False,
-                "error_code": "IMAGE_TOO_BLURRY",
-                "message": f"Image is too blurry (Laplacian variance: {lap_var:.1f} < {cfg['blur_variance_threshold']}). Please hold the camera steady and focus on the leaf symptoms.",
-                "validation_status": "FAILED"
-            }, None
+    lap = gray_arr[:-2, 1:-1] + gray_arr[2:, 1:-1] + gray_arr[1:-1, :-2] + gray_arr[1:-1, 2:] - 4.0 * gray_arr[1:-1, 1:-1]
+    lap_var = float(np.var(lap))
+    if lap_var < cfg["blur_variance_threshold"]:
+        return False, {
+            "success": False,
+            "error_code": "IMAGE_TOO_BLURRY",
+            "message": f"Image is too blurry (Laplacian variance: {lap_var:.1f} < {cfg['blur_variance_threshold']}). Please hold the camera steady and focus on the leaf symptoms.",
+            "validation_status": "FAILED"
+        }, None
 
     return True, None, pil_img
 
@@ -296,6 +299,18 @@ async def analyze_crop(file: UploadFile = File(...)):
         is_valid, validation_err, pil_img = validate_uploaded_image(image_bytes, file.content_type)
         if not is_valid:
             return validation_err
+
+        # Cap image resolution to max 1024px before classification and Grad-CAM
+        # to guarantee execution stays safely within Render free tier's 512MB RAM limit
+        max_dim = 1024
+        if max(pil_img.width, pil_img.height) > max_dim:
+            scale = max_dim / float(max(pil_img.width, pil_img.height))
+            new_w, new_h = int(pil_img.width * scale), int(pil_img.height * scale)
+            pil_img = pil_img.resize((new_w, new_h), resample=Image.Resampling.BILINEAR)
+            buf = io.BytesIO()
+            pil_img.save(buf, format="JPEG", quality=90)
+            image_bytes = buf.getvalue()
+            del buf
 
         # Step 2: Primary Diagnosis via Frozen PyTorch EfficientNet-B0
         visual_diag = ml_pipeline.image_classifier.predict(image_bytes, generate_cam=True)

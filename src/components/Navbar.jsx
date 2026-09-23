@@ -14,9 +14,11 @@ import {
   Cpu,
   Camera,
   Radio,
-  Sparkles
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 import { getUiTranslation } from '../data/uiTranslations';
+import { isRoleAuthenticated } from '../config/authCredentials';
 
 export const Navbar = ({ 
   currentLang, 
@@ -25,15 +27,21 @@ export const Navbar = ({
   onRoleChange, 
   activeView, 
   onNavigate,
-  onOpenSmsSim 
+  onOpenSmsSim,
+  onOpenLoginModal,
+  onLogout
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const tNav = getUiTranslation(currentLang).nav;
 
-  // Role switch: sets role and navigates directly to that role's workspace
+  // Role switch: checks session authentication before granting workspace access
   const handleRoleNavigate = (role) => {
-    onRoleChange(role);
-    onNavigate('dashboard');
+    if (isRoleAuthenticated(role)) {
+      onRoleChange(role);
+      onNavigate('dashboard');
+    } else {
+      onOpenLoginModal?.(role);
+    }
     setMobileMenuOpen(false);
   };
 
@@ -182,6 +190,18 @@ export const Navbar = ({
               >
                 {tNav.govt || '🏛️ Govt'}
               </button>
+
+              {/* Compact Logout Button inside workspace */}
+              {activeView === 'dashboard' && (
+                <button
+                  onClick={onLogout}
+                  className="ml-1 px-2 py-1.5 rounded-lg text-xs font-bold bg-rose-950/80 hover:bg-rose-900 border border-rose-700/80 text-rose-200 hover:text-white flex items-center space-x-1 transition-all cursor-pointer shadow-sm"
+                  title="Logout from workspace"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-300" />
+                  <span className="hidden md:inline">Logout</span>
+                </button>
+              )}
             </div>
 
             {/* Language Selector */}
@@ -257,6 +277,18 @@ export const Navbar = ({
                 </button>
               ))}
             </div>
+            {activeView === 'dashboard' && (
+              <button
+                onClick={() => {
+                  onLogout?.();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-2 px-3 rounded-xl text-xs font-bold bg-rose-950/80 border border-rose-700/80 text-rose-200 hover:text-white flex items-center justify-center space-x-2 cursor-pointer mt-1"
+              >
+                <LogOut className="w-4 h-4 text-rose-300" />
+                <span>Logout ({currentRole})</span>
+              </button>
+            )}
           </div>
         )}
       </div>
