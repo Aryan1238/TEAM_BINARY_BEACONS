@@ -291,9 +291,9 @@ def validate_uploaded_image(image_bytes: bytes, content_type: str):
 # MAIN FRONTEND ANALYZE ENDPOINT (Powered by EfficientNet-B0)
 # ============================================================
 @app.post("/analyze")
-async def analyze_crop(file: UploadFile = File(...)):
+def analyze_crop(file: UploadFile = File(...)):
     try:
-        image_bytes = await file.read()
+        image_bytes = file.file.read()
 
         # Step 1: Pre-Inference Quality & Validation Gate
         is_valid, validation_err, pil_img = validate_uploaded_image(image_bytes, file.content_type)
