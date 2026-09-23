@@ -35,35 +35,61 @@ export const fileToBase64 = (file) => {
  * Universal Crop Diagnostic Engine:
  * Primary Authoritative Engine: PyTorch EfficientNet-B0 Backend (/analyze)
  */
-export const runUniversalCropDiagnosis = async (file) => {
+export const runUniversalCropDiagnosis = async (file, apiKey = '', onStatusUpdate = null) => {
   const { dataUrl } = await fileToBase64(file);
 
   // =========================================================================
   // Sole Authoritative Engine: PyTorch EfficientNet-B0 Backend (/analyze)
   // =========================================================================
   try {
-    console.log(`🚀 Sending image to PyTorch EfficientNet-B0 Backend (${ANALYZE_ENDPOINT})...`);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout to allow Render free-tier cold starts
+    const executeInference = async (isRetry = false) => {
+      const controller = new AbortController();
+      // 95s timeout to allow Render free-tier cold starts without premature offline errors
+      const timeoutDuration = 95000;
+      const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
 
-    const formData = new FormData();
-    formData.append('file', file);
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await fetch(ANALYZE_ENDPOINT, {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
+      try {
+        console.log(`🚀 Sending image to PyTorch EfficientNet-B0 Backend (${ANALYZE_ENDPOINT}) [Attempt ${isRetry ? '2 (Auto-Retry)' : '1'}]...`);
+        const response = await fetch(ANALYZE_ENDPOINT, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      const errBody = await response.text();
-      let parsedErr = {};
-      try { parsedErr = JSON.parse(errBody); } catch (_) {}
-      throw new Error(parsedErr.detail || parsedErr.message || `Backend returned HTTP ${response.status}: ${response.statusText}`);
+        if (!response.ok) {
+          const errBody = await response.text();
+          let parsedErr = {};
+          try { parsedErr = JSON.parse(errBody); } catch (_) {}
+          throw new Error(parsedErr.detail || parsedErr.message || `Backend returned HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+    };
+
+    let data = null;
+    try {
+      data = await executeInference(false);
+    } catch (firstErr) {
+      if (firstErr.name === 'AbortError') {
+        console.warn('⚠️ Inference request timed out (>95s). Render instance may have just completed cold start. Executing automatic retry...');
+        if (onStatusUpdate) {
+          onStatusUpdate('🔄 Waking up AI model... (Backend cold-start detected, auto-retrying inference request)');
+        }
+        // Brief 1.5s pause to let the spun-up container stabilize
+        await new Promise((r) => setTimeout(r, 1500));
+        data = await executeInference(true);
+      } else {
+        throw firstErr;
+      }
     }
-
-    const data = await response.json();
 
     // Check for pre-inference quality validation rejection from backend
     if (data.validation_status === 'FAILED' || data.success === false) {
@@ -177,7 +203,7 @@ export const runUniversalCropDiagnosis = async (file) => {
 
     let helpfulMsg = `Cannot connect to PyTorch EfficientNet-B0 backend at ${ANALYZE_ENDPOINT}: ${backendErr.message}.`;
     if (isAbort) {
-      helpfulMsg = `The AI inference backend at ${ANALYZE_ENDPOINT} took longer than 60s to respond. On cloud services like Render, the free tier sleeps when idle and requires 45–60s to wake up on first request. The backend is likely awake now—please try uploading your photo again.`;
+      helpfulMsg = `The AI inference backend at ${ANALYZE_ENDPOINT} timed out (>95s per attempt, including automatic retry). On free cloud hosting (Render), the container sleeps when idle and may take up to 60-90s to wake up on first contact, or may still be spinning up. The instance should now be awake—please tap retry or upload your photo again.`;
     } else if (isHttps && isLocalBackend) {
       helpfulMsg += ` This app is served over HTTPS (cloud deployment), but the backend URL points to localhost. Cloud deployments require setting the VITE_BACKEND_URL repository secret in GitHub to your live service URL. For local testing, ensure your local backend is running (uvicorn main:app --reload on port 8000).`;
     } else {
@@ -189,7 +215,7 @@ export const runUniversalCropDiagnosis = async (file) => {
       validationError: true,
       errorCode: 'BACKEND_CONNECTION_ERROR',
       message: helpfulMsg,
-      statusMessage: isAbort ? `⚠️ Backend Wakeup Timeout (Cold Start)` : `⚠️ Backend Connection Failed: ${backendErr.message}`,
+      statusMessage: isAbort ? `⚠️ Backend Wakeup Timeout (Cold Start Retry Exceeded)` : `⚠️ Backend Connection Failed: ${backendErr.message}`,
       source: 'PyTorch EfficientNet-B0 (Backend Offline)',
       previewUrl: dataUrl
     };
