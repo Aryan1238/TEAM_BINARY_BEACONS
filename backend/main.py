@@ -136,6 +136,8 @@ def health():
         "success": True,
         "status": "healthy",
         "backend": "online",
+        "version": "5.1.0",
+        "build_version": "5.1.0-closed-form-cam",
         "ai_model": "PyTorch EfficientNet-B0",
         "ml_engine": "PyTorch EfficientNet-B0",
         "classes": 38,
