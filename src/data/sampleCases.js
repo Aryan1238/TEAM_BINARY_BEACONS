@@ -92,6 +92,60 @@ export const sampleCases = [
     chlorosisPercent: '50%'
   },
   {
+    id: 'case-apple-01',
+    title: 'Apple Scab Foliar Lesion',
+    crop: 'Apple',
+    district: 'Shimla, Himachal Pradesh',
+    diseaseId: 'apple-scab',
+    imageUrl: 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?auto=format&fit=crop&w=800&q=80',
+    fallbackSvg: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%230F382A"/><ellipse cx="200" cy="150" rx="135" ry="90" fill="%232E7D32"/><circle cx="170" cy="130" r="28" fill="%233E2723"/><circle cx="215" cy="165" r="22" fill="%234E342E"/><text x="20" y="35" fill="%23A1887F" font-family="monospace" font-size="14" font-weight="bold">Apple Scab Specimen</text></svg>',
+    description: 'Velvety olive-brown scab lesions on leaf surface causing marginal curling and chlorosis.',
+    bbox: { x: 30, y: 25, width: 45, height: 45 },
+    saliencyPoints: [
+      { x: 42, y: 45, intensity: 0.94 },
+      { x: 54, y: 55, intensity: 0.88 }
+    ],
+    confidence: 96.5,
+    severity: 'Moderate (Grade S2)',
+    chlorosisPercent: '26%'
+  },
+  {
+    id: 'case-corn-01',
+    title: 'Corn Northern Leaf Blight',
+    crop: 'Corn (Maize)',
+    district: 'Nashik, Maharashtra',
+    diseaseId: 'corn-blight',
+    imageUrl: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&w=800&q=80',
+    fallbackSvg: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%230F382A"/><rect x="80" y="130" width="240" height="40" rx="15" fill="%23558B2F"/><ellipse cx="200" cy="150" rx="70" ry="14" fill="%238D6E63"/><text x="20" y="35" fill="%23D7CCC8" font-family="monospace" font-size="14" font-weight="bold">Corn Blight Specimen</text></svg>',
+    description: 'Elliptical cigar-shaped tan lesions across foliar leaf blade with dark fungal sporulation.',
+    bbox: { x: 20, y: 35, width: 60, height: 30 },
+    saliencyPoints: [
+      { x: 50, y: 50, intensity: 0.95 },
+      { x: 65, y: 48, intensity: 0.89 }
+    ],
+    confidence: 95.8,
+    severity: 'Moderate (Grade S2)',
+    chlorosisPercent: '30%'
+  },
+  {
+    id: 'case-pepper-01',
+    title: 'Bell Pepper Bacterial Spot',
+    crop: 'Pepper',
+    district: 'Pune, Maharashtra',
+    diseaseId: 'pepper-bacterial-spot',
+    imageUrl: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?auto=format&fit=crop&w=800&q=80',
+    fallbackSvg: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="%230F382A"/><ellipse cx="200" cy="150" rx="130" ry="85" fill="%23388E3C"/><circle cx="160" cy="140" r="14" fill="%23BF360C"/><circle cx="195" cy="125" r="12" fill="%23D84315"/><circle cx="225" cy="160" r="10" fill="%23E64A19"/><text x="20" y="35" fill="%23FFCCBC" font-family="monospace" font-size="14" font-weight="bold">Pepper Spot Specimen</text></svg>',
+    description: 'Dark circular water-soaked lesions surrounded by distinctive chlorotic yellow halos on bell pepper leaf.',
+    bbox: { x: 28, y: 28, width: 48, height: 48 },
+    saliencyPoints: [
+      { x: 40, y: 46, intensity: 0.93 },
+      { x: 56, y: 52, intensity: 0.91 }
+    ],
+    confidence: 96.1,
+    severity: 'Moderate (Grade S2)',
+    chlorosisPercent: '24%'
+  },
+  {
     id: 'case-healthy-01',
     title: 'Healthy Specimen (Control Sample)',
     crop: 'Tomato',

@@ -534,5 +534,113 @@ export const cropDiseases = [
     },
     sampleImage: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&w=600&q=80',
     affectedDistricts: []
+  },
+  {
+    id: 'apple-scab',
+    crop: 'Apple',
+    cropMarathi: 'सफरचंद',
+    cropHindi: 'सेब',
+    name: 'Apple Scab',
+    marathiName: 'सफरचंद खवले रोग (स्कॅब)',
+    hindiName: 'सेब स्कैब रोग',
+    pathogenType: 'Fungal',
+    scientificName: 'Venturia inaequalis',
+    severity: 'Moderate',
+    severityScore: 2,
+    confidence: 94.5,
+    symptoms: 'Olive-green to black velvety spots on leaves, becoming brown and corky with premature leaf drop.',
+    marathiSymptoms: 'पानांवर ऑलिव्ह-हिरवे ते काळे मखमली डाग, नंतर तपकिरी होतात.',
+    hindiSymptoms: 'पत्तियों पर जैतून-हरे से काले मखमली धब्बे, जो बाद में भूरे हो जाते हैं।',
+    favorableConditions: {
+      tempRange: '15°C - 24°C',
+      rhMin: '85%',
+      leafWetnessHours: '9+ hrs',
+      rainfall: 'Frequent showers'
+    },
+    ipm: {
+      cultural: ['Rake and destroy fallen leaves in autumn to reduce overwintering ascospores.'],
+      mechanical: ['Prune canopy for sunlight penetration and rapid foliage drying.'],
+      biological: [{ name: 'Bacillus subtilis (Serenade ASO)', dosage: '3ml / liter' }],
+      chemical: [{
+        molecule: 'Difenoconazole 25% EC (CIBRC Approved)',
+        brandExamples: 'Score / Karathane',
+        dosagePerLiter: '0.5ml / liter',
+        phiDays: 14
+      }]
+    },
+    sampleImage: 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?auto=format&fit=crop&w=600&q=80',
+    affectedDistricts: ['Shimla', 'Kashmir Valley', 'Kinnaur']
+  },
+  {
+    id: 'corn-blight',
+    crop: 'Corn (Maize)',
+    cropMarathi: 'मका',
+    cropHindi: 'मक्का',
+    name: 'Northern Leaf Blight',
+    marathiName: 'मका पानावरील करपा रोग',
+    hindiName: 'मक्का उत्तरी पत्ती झुलसा रोग',
+    pathogenType: 'Fungal',
+    scientificName: 'Exserohilum turcicum',
+    severity: 'Moderate',
+    severityScore: 2,
+    confidence: 93.8,
+    symptoms: 'Long, elliptical, grayish-green or tan cigar-shaped lesions on foliage developing dark fungal sporulation.',
+    marathiSymptoms: 'पानांवर लांबट सिगार आकाराचे करडे-हिरवे डाग पडतात.',
+    hindiSymptoms: 'पत्तियों पर लंबे, सिगार के आकार के भूरे-हरे धब्बे दिखाई देते हैं।',
+    favorableConditions: {
+      tempRange: '18°C - 27°C',
+      rhMin: '90%',
+      leafWetnessHours: '6+ hrs',
+      rainfall: 'Moderate'
+    },
+    ipm: {
+      cultural: ['Plant resistant hybrid varieties; rotate with non-host leguminous crops.'],
+      mechanical: ['Deep summer ploughing to bury crop residue infected with conidia.'],
+      biological: [{ name: 'Trichoderma harzianum 2% WP', dosage: '5g / liter' }],
+      chemical: [{
+        molecule: 'Azoxystrobin 18.2% + Difenoconazole 11.4% SC',
+        brandExamples: 'Amistar Top',
+        dosagePerLiter: '1ml / liter',
+        phiDays: 21
+      }]
+    },
+    sampleImage: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?auto=format&fit=crop&w=600&q=80',
+    affectedDistricts: ['Nashik', 'Dhule', 'Jalgaon', 'Kolhapur']
+  },
+  {
+    id: 'pepper-bacterial-spot',
+    crop: 'Pepper',
+    cropMarathi: 'शिमला मिरची',
+    cropHindi: 'शिमला मिर्च',
+    name: 'Pepper Bacterial Spot',
+    marathiName: 'मिरची जिवाणूजन्य ठिपके रोग',
+    hindiName: 'मिर्च जीवाणु पत्ती धब्बा रोग',
+    pathogenType: 'Bacterial',
+    scientificName: 'Xanthomonas campestris pv. vesicatoria',
+    severity: 'Moderate',
+    severityScore: 2,
+    confidence: 95.2,
+    symptoms: 'Small, dark brown, circular to irregular water-soaked spots with yellow halos, causing blossom and leaf drop.',
+    marathiSymptoms: 'पानांवर काळसर तपकिरी पाणीदार डाग पिवळ्या कडांसह पडतात.',
+    hindiSymptoms: 'पत्तियों पर पीले घेरे वाले छोटे, गहरे भूरे जल-सिक्त धब्बे बनते हैं।',
+    favorableConditions: {
+      tempRange: '24°C - 30°C',
+      rhMin: '85%',
+      leafWetnessHours: '5+ hrs',
+      rainfall: 'Heavy rains/overhead irrigation'
+    },
+    ipm: {
+      cultural: ['Use certified disease-free seeds; practice 2-year crop rotation with non-solanaceous crops.'],
+      mechanical: ['Avoid overhead sprinkler irrigation to stop bacterial splash dissemination.'],
+      biological: [{ name: 'Pseudomonas fluorescens 1% WP', dosage: '5g / liter' }],
+      chemical: [{
+        molecule: 'Copper Oxychloride 50% WP + Streptocycline (CIBRC Approved)',
+        brandExamples: 'Blitox + Streptocycline',
+        dosagePerLiter: '2.5g COC + 0.1g Strepto / liter',
+        phiDays: 3
+      }]
+    },
+    sampleImage: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83?auto=format&fit=crop&w=600&q=80',
+    affectedDistricts: ['Pune', 'Satara', 'Kolhapur', 'Solapur']
   }
 ];
