@@ -55,6 +55,15 @@ class CropDiseaseClassifier:
         self.model = None
         self.checkpoint_path = None
 
+        # Render 512MB RAM safety: Restrict CPU thread pools to 1 thread
+        # Prevents OpenMP from spawning 16-32 threads on shared cloud hosts (which burns ~250MB stack RAM)
+        if self.device.type == "cpu":
+            torch.set_num_threads(1)
+            try:
+                torch.set_num_interop_threads(1)
+            except Exception:
+                pass
+
         # Production Preprocessing Matching Evaluation: Resize(256) -> CenterCrop(224) -> ToTensor() -> ImageNet Normalization
         self.transform = transforms.Compose([
             transforms.Resize(256),
@@ -129,6 +138,11 @@ class CropDiseaseClassifier:
             image = image_input.convert("RGB")
         else:
             raise ValueError(f"Unsupported image input type: {type(image_input)}")
+
+        # Cap image resolution to max 640px to eliminate memory spikes during Grad-CAM overlay
+        if max(image.size) > 640:
+            resample_filter = getattr(Image, 'Resampling', Image).BILINEAR
+            image.thumbnail((640, 640), resample_filter)
 
         tensor = self.transform(image).unsqueeze(0).to(self.device)
 
