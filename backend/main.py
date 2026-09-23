@@ -320,9 +320,8 @@ async def analyze_crop(file: UploadFile = File(...)):
         confidence_pct = visual_diag["confidence_percent"]
         predicted_class_key = visual_diag["predicted_class"]
 
-        # Step 3: Run Weather-based Risk & IPM Engine (pass precomputed_diagnosis to eliminate duplicate forward pass)
-        ml_res = ml_pipeline.process_full_diagnosis(
-            precomputed_diagnosis=visual_diag,
+        # Step 3: Run Weather-based Risk & IPM Engine directly (eliminates redundant DBSCAN spatial clustering overhead)
+        risk_res = ml_pipeline.risk_forecaster.predict_risk(
             crop_name=crop_name.lower(),
             growth_stage="flowering",
             temperature=28.5,
@@ -330,10 +329,13 @@ async def analyze_crop(file: UploadFile = File(...)):
             rainfall=15.0,
             leaf_wetness_hours=9.0
         )
+        risk_level = risk_res.get("risk_level", "MODERATE")
 
-        advisory = ml_res.get("integrated_pest_management_advisory", {})
+        advisory = ml_pipeline.ipm_recommender.generate_advisory(
+            disease_class=predicted_class_key,
+            severity_rating=risk_level
+        )
         ipm_steps = advisory.get("integrated_management_steps", {})
-        risk_level = ml_res.get("weather_risk_forecasting", {}).get("risk_level", "MODERATE")
 
         recommendations_list = [
             f"Cultural Practice: {ipm_steps.get('step1_cultural', 'Crop rotation with non-host crops. Destroy crop residue after harvest.')}",
@@ -375,7 +377,7 @@ async def analyze_crop(file: UploadFile = File(...)):
                 "top5_predictions": visual_diag.get("top5_predictions", {}),
                 "heatmap_base64": visual_diag.get("heatmap_base64", ""),
                 "gradcam_image": visual_diag.get("heatmap_base64", ""),
-                "pest_trap_analysis": ml_res.get("pest_trap_analysis"),
+                "pest_trap_analysis": None,
                 "supplementary_advice": supplementary_advice,
                 "model_architecture": "EfficientNet-B0",
                 "checkpoint_path": visual_diag.get("checkpoint_path")
@@ -383,7 +385,7 @@ async def analyze_crop(file: UploadFile = File(...)):
         }
 
         # Explicitly free memory
-        del image_bytes, pil_img, visual_diag, ml_res
+        del image_bytes, pil_img, visual_diag, risk_res, advisory
         gc.collect()
 
         return response_payload
