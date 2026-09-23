@@ -112,9 +112,8 @@ class CropDiseaseClassifier:
         self.model.to(self.device)
         self.model.eval()
 
-        # Freeze features[:-1] parameters: Grad-CAM only requires gradients for features[-1]
-        # Eliminates 80% of autograd backward pass compute and memory on CPU
-        for p in self.model.features[:-1].parameters():
+        # Freeze all model parameters: closed-form Grad-CAM requires zero autograd
+        for p in self.model.parameters():
             p.requires_grad = False
 
         self.checkpoint_path = target_path
@@ -154,7 +153,10 @@ class CropDiseaseClassifier:
 
         # 1. Primary Model Prediction with torch.inference_mode()
         with torch.inference_mode():
-            outputs = self.model(tensor)
+            features = self.model.features(tensor)
+            pooled = self.model.avgpool(features)
+            flattened = torch.flatten(pooled, 1)
+            outputs = self.model.classifier(flattened)
             probs = F.softmax(outputs, dim=1)[0]
             topk_probs, topk_indices = torch.topk(probs, min(5, len(self.classes)))
 
@@ -162,6 +164,15 @@ class CropDiseaseClassifier:
             top_prob = float(topk_probs[0].item())
             top5_indices_list = [int(idx.item()) for idx in topk_indices]
             top5_probs_list = [float(p.item()) for p in topk_probs]
+
+            # 2. Closed-Form Grad-CAM Generation (Zero Autograd Graph / Zero Memory Overhead)
+            heatmap_b64 = ""
+            if generate_cam:
+                heatmap_b64 = self.generate_gradcam(image, features, top_idx)
+
+        del tensor, features, pooled, flattened, outputs, probs
+        del image
+        gc.collect()
 
         predicted_class = self.classes[top_idx]
         crop_name, disease_name = parse_class_name(predicted_class)
@@ -183,14 +194,6 @@ class CropDiseaseClassifier:
                 "confidence": prob_val
             })
 
-        # 2. Genuine Gradient-Based Grad-CAM Generation
-        heatmap_b64 = ""
-        if generate_cam:
-            heatmap_b64 = self.generate_gradcam(image, tensor, top_idx)
-
-        del tensor, image
-        gc.collect()
-
         return {
             "predicted_class": predicted_class,
             "crop": crop_name,
@@ -205,51 +208,20 @@ class CropDiseaseClassifier:
             "checkpoint_path": self.checkpoint_path
         }
 
-    def generate_gradcam(self, original_image: Image.Image, input_tensor: torch.Tensor, target_class_idx: int) -> str:
+    def generate_gradcam(self, original_image: Image.Image, features: torch.Tensor, target_class_idx: int) -> str:
         """
-        Generates genuine gradient-weighted class activation mapping (Grad-CAM).
-        Hooks the final convolutional feature layer of EfficientNet-B0 (model.features[-1]).
-        Memory-safe: hooks registered and removed in try...finally, gradients zeroed with set_to_none=True,
-        intermediate tensors and large numpy arrays explicitly freed, and gc.collect() invoked.
+        Generates genuine gradient-weighted class activation mapping (Grad-CAM/CAM).
+        Directly projects final convolutional features (self.model.features[-1]) using the
+        target class linear classification head weights (mathematically exact closed-form Grad-CAM for GAP-CNNs).
+        Zero autograd graphs, zero backward pass, zero memory leaks.
         """
-        handle_fwd = None
-        handle_bwd = None
-        activations = None
-        gradients = None
-        x = None
-        output = None
-        target_score = None
-        weights = None
-        cam = None
         try:
-            target_layer = self.model.features[-1]
+            linear_layer = self.model.classifier[1]
+            class_weights = linear_layer.weight[target_class_idx]
 
-            def forward_hook(module, inp, outp):
-                nonlocal activations
-                activations = outp
-
-            def backward_hook(module, grad_in, grad_out):
-                nonlocal gradients
-                gradients = grad_out[0]
-
-            handle_fwd = target_layer.register_forward_hook(forward_hook)
-            handle_bwd = target_layer.register_full_backward_hook(backward_hook)
-
-            # Grad-CAM requires gradient tracking through target convolutional features
-            x = input_tensor.clone().detach().requires_grad_(True)
-            self.model.zero_grad(set_to_none=True)
-            output = self.model(x)
-            target_score = output[0, target_class_idx]
-            target_score.backward()
-
-            if activations is None or gradients is None:
-                return ""
-
-            # Global average pooling of gradients over spatial dimensions (H, W)
-            weights = torch.mean(gradients, dim=(2, 3), keepdim=True)
-            cam = torch.sum(weights * activations.detach(), dim=1).squeeze()
+            # Weighted sum over 1280 feature channels: (1, 1280, 1, 1) * (1, 1280, 7, 7) -> sum along dim 1 -> (7, 7)
+            cam = torch.sum(class_weights.view(1, -1, 1, 1) * features, dim=1).squeeze()
             cam = F.relu(cam)
-
             cam_max = torch.max(cam)
             if cam_max > 0:
                 cam = cam / cam_max
@@ -284,20 +256,11 @@ class CropDiseaseClassifier:
             out_img.save(buf, format="JPEG", quality=85)
             encoded = base64.b64encode(buf.getvalue()).decode("utf-8")
 
-            del cam_np, cam_img, cam_norm, r, g, b, heatmap_rgb, orig_rgb, overlay, out_img, buf, overlay_base
+            del cam, cam_np, cam_img, cam_norm, r, g, b, heatmap_rgb, orig_rgb, overlay, out_img, buf, overlay_base
             return encoded
-
         except Exception as e:
             print(f"⚠️ [Grad-CAM Warning] Grad-CAM generation encountered an error: {e}")
             return ""
-        finally:
-            if handle_fwd is not None:
-                handle_fwd.remove()
-            if handle_bwd is not None:
-                handle_bwd.remove()
-            self.model.zero_grad(set_to_none=True)
-            del activations, gradients, x, output, target_score, weights, cam
-            gc.collect()
 
 
 # Compatibility aliases

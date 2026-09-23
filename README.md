@@ -94,18 +94,28 @@ graph TD
 ---
 
 ## 🧭 Direct Role-Based Workspaces & Navigation
-The legacy Role Hub intermediary screen has been retired in favor of **direct, instantaneous role navigation** from the header:
-- **🧑‍🌾 Farmer Workspace (`FarmerDashboard`):** Streamlined plot management, Crop Health Passports, treatment logs, and a dynamic 14-crop field registration modal. Removed non-contextual landing hero banners to maintain pure dashboard utility.
+The platform provides **authenticated direct role navigation** with session persistence and pre-configured hackathon demo credentials:
+
+| 👤 Role | 🔑 Demo Username | 🔒 Demo Password | 🎯 Workspace Scope |
+| :--- | :--- | :--- | :--- |
+| **🧑‍🌾 Farmer** | `farmer` | `farmer123` | Plot registry, foliar disease diagnosis, Crop Health Passports & CIBRC treatment schedules |
+| **📋 Extension Officer** | `officer` | `officer123` | Village survey intake, taluka outbreak urgency triage, offline sync & SMS advisory dispatch |
+| **🏛️ State Government** | `govt` | `govt123` | Real-time taluka alert feeds, contagion buffer zones, pesticide supply tracking & statutory bulletins |
+
+- **🧑‍🌾 Farmer Workspace (`FarmerDashboard`):** Streamlined plot management, Crop Health Passports, treatment logs, and a dynamic 14-crop field registration modal.
 - **📋 Extension Officer Workspace (`ExtensionOfficerDashboard`):** Rapid village survey intake, spatial triage by outbreak urgency, offline-first sync cache, and verified SMS/WhatsApp bulletin dispatch.
 - **🏛️ State Government Command Center (`GovtCommandCenter`):** Real-time taluka alert feeds, contagion buffer zones, pesticide supply chain monitoring, and statutory advisory broadcasts.
 
 ---
 
 ## 🔬 Diagnostic Studio & Agronomic Validation Engines
-- **Dynamic Crop-Matched Confusion Matrix & Softmax Logits:** Both the diagnostic probability meters and the Confusion Matrix modal dynamically adapt to the diagnosed crop (Tomato, Cotton, Grapes, Soybean, Sugarcane, Apple, Potato, Corn (Maize)). This guarantees 100% agronomic consistency with zero cross-crop class leakage.
+- **Authoritative Single-Pass PyTorch Inference & Closed-Form Grad-CAM:** Production diagnosis executes exclusively via PyTorch EfficientNet-B0 with zero external LLM dependencies. Features a closed-form Grad-CAM projection directly from convolutional feature maps and linear classification weights, guaranteeing sub-second latency and zero memory leaks under Render's 512MB RAM budget.
+- **Live Dynamic Confusion Matrix & Softmax Logits:** The diagnostic probability meters and Confusion Matrix modal dynamically activate upon diagnosis. The matrix highlights the active detected pathology with live row indicators and recomputes Accuracy, Precision, Recall, and F1 dynamically for the diagnosed crop with 100% agronomic consistency.
+- **Dual-Source Consistency Guard:** Active runtime cross-verification ensures the main diagnosis card, sidebar logits, and confusion matrix always agree on the diagnosed crop with zero cross-crop prefix leakage (e.g. eliminating Tomato fallbacks across all 38 classes).
 - **Multi-Crop Pheromone Pest Traps:** Multi-crop trap surveillance with CIBRC Economic Threshold Levels (ETL) calibrated across Cotton (Pink Bollworm), Tomato (Fruit Borer), Soybean (Armyworm), Sugarcane (Shoot Borer), and Grapes (Berry Moth).
 - **Offline Phenology Checklist Wizard:** Interactive foliar symptom evaluation running deterministic CIBRC decision trees filtered dynamically by selected crop.
 - **14-Crop Registered Field Taxonomy:** Field registration dynamically presents deduplicated botanical classes derived from the 38-class ML taxonomy (Apple, Blueberry, Cherry, Corn (Maize), Grape, Orange, Peach, Pepper Bell, Potato, Raspberry, Soybean, Squash, Strawberry, Tomato).
+- **Synchronized Cloud Deployments:** Both Vercel and GitHub Pages frontend deployments dynamically resolve the authoritative Render backend (`https://krushiraksha-backend.onrender.com`), with automatic cold-start detection and auto-retry guards.
 
 ---
 

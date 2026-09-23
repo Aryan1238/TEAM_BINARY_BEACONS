@@ -284,6 +284,7 @@ def validate_uploaded_image(image_bytes: bytes, content_type: str):
             "validation_status": "FAILED"
         }, None
 
+    del check_img, gray_arr, lap
     return True, None, pil_img
 
 
@@ -307,13 +308,9 @@ def analyze_crop(file: UploadFile = File(...)):
             scale = max_dim / float(max(pil_img.width, pil_img.height))
             new_w, new_h = int(pil_img.width * scale), int(pil_img.height * scale)
             pil_img = pil_img.resize((new_w, new_h), resample=Image.Resampling.BILINEAR)
-            buf = io.BytesIO()
-            pil_img.save(buf, format="JPEG", quality=90)
-            image_bytes = buf.getvalue()
-            del buf
 
         # Step 2: Primary Diagnosis via Frozen PyTorch EfficientNet-B0
-        visual_diag = ml_pipeline.image_classifier.predict(image_bytes, generate_cam=True)
+        visual_diag = ml_pipeline.image_classifier.predict(pil_img, generate_cam=True)
         crop_name = visual_diag["crop"]
         disease_name = visual_diag["disease"]
         confidence_float = visual_diag["confidence"]
